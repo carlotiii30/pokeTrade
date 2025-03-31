@@ -1,0 +1,10 @@
+<resources>
+
+    <style name="Theme.PokemonTrade" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+
+    <style name="Theme.PokemonTrade.Splash" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="windowSplashScreenBackground">@color/blue_primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.PokemonTrade</item>
+    </style>
+</resources>
