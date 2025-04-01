@@ -13,3 +13,5 @@ val Pink40 = Color(0xFF7D5260)
 val BluePrimary = Color(0xFF2750A0)
 val RedPrimary = Color(0xFFF93D32)
 val GreenPrimary = Color(0xFF7FC9AE)
+
+val DisabledBlue = Color(0XFF85A2DA)

@@ -1,4 +1,4 @@
-package com.example.pokemontrade.ui.screens
+package com.example.pokemontrade.ui.screens.home
 
 import android.content.Context
 import androidx.compose.foundation.Image

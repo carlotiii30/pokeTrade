@@ -16,6 +16,13 @@ import androidx.core.content.edit
 import androidx.navigation.compose.*
 import com.example.pokemontrade.ui.components.BottomNavigationBar
 import com.example.pokemontrade.ui.screens.*
+import com.example.pokemontrade.ui.screens.auth.AuthScreen
+import com.example.pokemontrade.ui.screens.auth.LoginScreen
+import com.example.pokemontrade.ui.screens.auth.RegisterScreen
+import com.example.pokemontrade.ui.screens.home.CardDetailScreen
+import com.example.pokemontrade.ui.screens.home.HomeScreen
+import com.example.pokemontrade.ui.screens.location.LocationScreen
+import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreen
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 
 class MainActivity : ComponentActivity() {
@@ -33,10 +40,11 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation(context: Context) {
     val navController = rememberNavController()
 
-    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
-    val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
+     val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
+     val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
 
-    val startDestination = if (isLoggedIn.value) "home" else "welcome"
+    // val startDestination = if (isLoggedIn.value) "home" else "welcome"
+    val startDestination = "welcome"
 
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
@@ -46,7 +54,6 @@ fun AppNavigation(context: Context) {
         bottomBar = {
             if (showBottomBar) {
                 BottomNavigationBar(navController = navController, currentRoute = currentRoute ?: "")
-
             }
         }
     ) { innerPadding ->
@@ -82,6 +89,15 @@ fun AppNavigation(context: Context) {
             composable("location/{name}") { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: ""
                 LocationScreen(
+                    context = context,
+                    navController = navController,
+                    userName = name
+                )
+            }
+
+            composable("select_location_map/{userName}") { backStackEntry ->
+                val name = backStackEntry.arguments?.getString("userName") ?: ""
+                SelectLocationMapScreen(
                     context = context,
                     navController = navController,
                     userName = name
