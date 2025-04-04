@@ -43,8 +43,7 @@ fun AppNavigation(context: Context) {
      val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
      val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
 
-    // val startDestination = if (isLoggedIn.value) "home" else "welcome"
-    val startDestination = "welcome"
+    val startDestination = if (isLoggedIn.value) "home" else "welcome"
 
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
