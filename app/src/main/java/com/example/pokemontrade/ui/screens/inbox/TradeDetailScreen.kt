@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
@@ -23,14 +24,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pokemontrade.R
 import com.example.pokemontrade.ui.theme.GreenPrimary
+import com.example.pokemontrade.ui.theme.LightGray
+import com.example.pokemontrade.ui.theme.LightGreen
 
 @Composable
 fun TradeDetailScreen(
@@ -42,39 +47,70 @@ fun TradeDetailScreen(
     onReject: () -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize()) {
-        // Cabecera
         Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .background(GreenPrimary)
-                .padding(16.dp)
+                .padding(32.dp)
         ) {
             Column {
-                Text("Intercambio Pokémon", fontWeight = FontWeight.Bold, color = Color.White)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Intercambio Pokémon",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 22.sp
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFF0F0F0), shape = CircleShape)
+                            .size(56.dp)
+                            .background(LightGray, shape = CircleShape)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(proposer, fontWeight = FontWeight.Bold)
-                        Text("Entrenador Pokémon", fontSize = 12.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = proposer,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Entrenador",
+                            color = LightGreen,
+                            fontSize = 14.sp
+                        )
                     }
                     Spacer(Modifier.weight(1f))
-                    Text(time, color = Color.White, fontSize = 12.sp)
+                    Text(
+                        time,
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Cuerpo
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text("Gyarados por Zapdos", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            Text("¿Trato hecho?", color = Color(0xFF93CDBB), fontWeight = FontWeight.SemiBold)
+            Text(
+                text = "Gyarados por Zapdos",
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                lineHeight = 28.sp
+            )
+            Text(
+                text = "¿Trato hecho?",
+                color = GreenPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -97,20 +133,42 @@ fun TradeDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 36.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Button(
                     onClick = onReject,
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(56.dp),
+                    shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
                 ) {
-                    Text("Rechazar", color = Color.Black)
+                    Text(
+                        text = "Rechazar",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
                 Button(
                     onClick = onAccept,
+                    modifier = Modifier
+                        .width(150.dp)
+                        .height(56.dp),
+                    shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
                 ) {
-                    Text("Aceptar", color = Color.White)
+                    Text(
+                        text = "Aceptar",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

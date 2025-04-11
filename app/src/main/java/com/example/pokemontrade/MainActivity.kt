@@ -5,24 +5,44 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
-import androidx.navigation.compose.*
+import androidx.navigation.NavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.pokemontrade.ui.components.BottomNavigationBar
-import com.example.pokemontrade.ui.screens.*
+import com.example.pokemontrade.ui.screens.WelcomeScreen
 import com.example.pokemontrade.ui.screens.auth.AuthScreen
 import com.example.pokemontrade.ui.screens.auth.LoginScreen
 import com.example.pokemontrade.ui.screens.auth.RegisterScreen
 import com.example.pokemontrade.ui.screens.home.CardDetailScreen
 import com.example.pokemontrade.ui.screens.home.HomeScreen
+import com.example.pokemontrade.ui.screens.inbox.InboxScreen
+import com.example.pokemontrade.ui.screens.inbox.TradeDetailScreen
 import com.example.pokemontrade.ui.screens.location.LocationScreen
 import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreen
+import com.example.pokemontrade.ui.theme.BluePrimary
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 
 class MainActivity : ComponentActivity() {
@@ -39,9 +59,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(context: Context) {
     val navController = rememberNavController()
+    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
 
-     val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
-     val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
+    val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
+    val userName = prefs.getString("name", "Entrenador") ?: "Entrenador"
 
     val startDestination = if (isLoggedIn.value) "home" else "welcome"
 
@@ -52,7 +73,10 @@ fun AppNavigation(context: Context) {
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                BottomNavigationBar(navController = navController, currentRoute = currentRoute ?: "")
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute ?: ""
+                )
             }
         }
     ) { innerPadding ->
@@ -79,8 +103,14 @@ fun AppNavigation(context: Context) {
             composable("register") {
                 RegisterScreen(
                     onBackClick = { navController.popBackStack() },
-                    onRegisterClick = { name, _, _ ->
-                        navController.navigate("location/$name")
+                    onRegisterSuccess = { token ->
+                        prefs.edit {
+                            putBoolean("isLoggedIn", true)
+                            putString("access_token", token)
+                        }
+                        navController.navigate("home") {
+                            popUpTo("register") { inclusive = true }
+                        }
                     }
                 )
             }
@@ -106,8 +136,11 @@ fun AppNavigation(context: Context) {
             composable("login") {
                 LoginScreen(
                     onBackClick = { navController.popBackStack() },
-                    onLoginClick = { _, _ ->
-                        prefs.edit { putBoolean("isLoggedIn", true) }
+                    onLoginClick = { name, _ ->
+                        prefs.edit {
+                            putBoolean("isLoggedIn", true)
+                            putString("name", name)
+                        }
                         navController.navigate("home") {
                             popUpTo("auth") { inclusive = true }
                         }
@@ -126,12 +159,18 @@ fun AppNavigation(context: Context) {
             }
 
             composable("inbox") {
-                InboxScreen()
+                InboxScreen(
+                    userName = userName,
+                    onConversationClick = { convo ->
+                        navController.navigate("detail/${convo.name}/${convo.time}")
+                    }
+                )
             }
 
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(navController = navController)
             }
+
 
             composable("card/{cardId}") { backStackEntry ->
                 val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
@@ -141,20 +180,58 @@ fun AppNavigation(context: Context) {
                     cardType = "Básico"
                 )
             }
+
+            composable(
+                "detail/{name}/{time}",
+                arguments = listOf(
+                    navArgument("name") { type = NavType.StringType },
+                    navArgument("time") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val name = backStackEntry.arguments?.getString("name") ?: ""
+                val time = backStackEntry.arguments?.getString("time") ?: ""
+
+                TradeDetailScreen(
+                    proposer = name,
+                    time = time,
+                    offeredCard = R.drawable.cards_header,
+                    requestedCard = R.drawable.cards_header,
+                    onAccept = { navController.popBackStack() },
+                    onReject = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun InboxScreen() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Bandeja de entrada")
-    }
-}
+fun ProfileScreen(
+    navController: NavController
+) {
+    val context = LocalContext.current
 
-@Composable
-fun ProfileScreen() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Perfil")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Perfil")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
+                    prefs.edit().clear().apply()
+
+                    navController.navigate("welcome") {
+                        popUpTo(0) { inclusive = true } // Limpia todo el backstack
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BluePrimary,
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Cerrar sesión")
+            }
+        }
     }
 }

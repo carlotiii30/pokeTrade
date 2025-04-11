@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pokemontrade.R
 import com.example.pokemontrade.ui.theme.GreenPrimary
+import com.example.pokemontrade.ui.theme.LightGray
+import com.example.pokemontrade.ui.theme.LightGreen
 
 
 @Composable
@@ -39,22 +43,31 @@ fun InboxScreen(
 ) {
     Column(Modifier.fillMaxSize()) {
         Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .background(GreenPrimary)
-                .padding(24.dp)
+                .padding(32.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Hola\n$userName",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Column {
+                    Text(
+                        text = "Hola",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LightGreen
+                    )
+                    Text(
+                        text = userName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
                 Icon(
                     painter = painterResource(id = R.drawable.buscar),
                     contentDescription = "Buscar",
@@ -67,7 +80,7 @@ fun InboxScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Lista de conversaciones
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -89,15 +102,28 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .background(Color(0xFFF0F0F0), shape = CircleShape)
+                .size(56.dp)
+                .background(LightGray, shape = CircleShape)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = convo.name, fontWeight = FontWeight.Bold)
-            Text(text = "En trámite", color = Color(0xFF93CDBB), fontSize = 12.sp)
+            Text(
+                text = convo.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "En trámite",
+                color = GreenPrimary,
+                fontSize = 14.sp
+            )
         }
-        Text(text = convo.time, fontSize = 12.sp, color = Color.Gray)
+        Text(
+            text = convo.time,
+            fontSize = 14.sp,
+            color = LightGray,
+        )
     }
 }
 
