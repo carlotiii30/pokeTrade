@@ -2,9 +2,7 @@ package com.example.pokemontrade.ui.screens.home
 
 import android.content.Context
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +12,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -26,10 +32,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.example.pokemontrade.R
 import com.example.pokemontrade.ui.theme.BluePrimary
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     context: Context,
@@ -69,10 +75,8 @@ fun HomeScreen(
             )
         }
 
-
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Barra de búsqueda
         var searchText by remember { mutableStateOf("") }
 
         TextField(
@@ -124,36 +128,77 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Categorías
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(Color(0xFFF2F2F2), shape = RoundedCornerShape(24.dp)),
-            contentAlignment = Alignment.CenterStart
+        var expanded by remember { mutableStateOf(false) }
+        val types = listOf(
+            "Todos", "Agua", "Fuego", "Planta", "Eléctrico", "Psíquico", "Lucha",
+            "Dragón", "Oscuro", "Hada", "Acero", "Normal"
+        )
+        var selectedType by remember { mutableStateOf(types[0]) }
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Categorías",
-                fontSize = 16.sp,
-                color = Color.Black,
+            TextField(
+                value = selectedType,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Tipos") },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = null
+                    )
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFF2F2F2),
+                    unfocusedContainerColor = Color(0xFFF2F2F2),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    focusedPlaceholderColor = Color.Gray,
+                    unfocusedPlaceholderColor = Color.Gray
+                ),
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                types.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type) },
+                        onClick = {
+                            selectedType = type
+                            expanded = false
+                        }
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 👇 Aquí pasamos onCardClick
+        val typesToShow = if (selectedType == "Todos") types.drop(1) else listOf(selectedType)
+
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-            modifier = Modifier.fillMaxSize()
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 8.dp)
         ) {
-            item {
-                Section(title = "Nuevas cartas registradas", onCardClick = onCardClick)
-            }
-            item {
-                Section(title = "Intercambio rápido", onCardClick = onCardClick)
-            }
-            item {
-                Section(title = "Set más reciente", onCardClick = onCardClick)
+            items(typesToShow.size) { index ->
+                val type = typesToShow[index]
+                Section(
+                    title = "Cartas de tipo $type",
+                    selectedType = selectedType,
+                    onCardClick = onCardClick
+                )
             }
         }
 
@@ -162,7 +207,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun Section(title: String, onCardClick: (String) -> Unit = {}) {
+fun Section(title: String, selectedType: String, onCardClick: (String) -> Unit = {}) {
     Column {
         Text(
             text = title,
@@ -171,21 +216,52 @@ fun Section(title: String, onCardClick: (String) -> Unit = {}) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(4) { index ->
-                val cardId = "$title-$index"
-                Card(
-                    onClick = { onCardClick(cardId) },
-                    modifier = Modifier
-                        .size(width = 100.dp, height = 140.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.cards_header),
-                        contentDescription = "Carta $index",
-                        modifier = Modifier.fillMaxSize()
-                    )
+        if (selectedType == "Todos") {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(4) { index ->
+                    val cardId = "$title-$index"
+                    Card(
+                        onClick = { onCardClick(cardId) },
+                        modifier = Modifier
+                            .size(width = 100.dp, height = 140.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.cards_header),
+                            contentDescription = "Carta $index",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(600.dp)
+            ) {
+                items(8) { index ->
+                    val cardId = "$title-$index"
+                    Card(
+                        onClick = { onCardClick(cardId) },
+                        modifier = Modifier
+                            .height(140.dp)
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.cards_header),
+                            contentDescription = "Carta $index",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
         }
@@ -193,7 +269,6 @@ fun Section(title: String, onCardClick: (String) -> Unit = {}) {
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

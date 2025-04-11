@@ -94,7 +94,7 @@ fun RegisterScreen(
                 onValueChange = { name = it },
                 label = {
                     Text(
-                        text = "Nombre y apellidos",
+                        text = "Nombre",
                         color = BluePrimary
                     )
                 },
