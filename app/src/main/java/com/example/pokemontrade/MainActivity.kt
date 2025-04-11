@@ -68,7 +68,9 @@ fun AppNavigation(context: Context) {
 
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
-    val showBottomBar = currentRoute in listOf("home", "inbox", "profile", "card/{cardId}")
+    val showBottomBar = currentRoute?.startsWith("detail/") == true ||
+            currentRoute in listOf("home", "inbox", "profile", "card/{cardId}")
+
 
     Scaffold(
         bottomBar = {
