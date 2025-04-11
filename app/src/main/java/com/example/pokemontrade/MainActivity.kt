@@ -103,14 +103,8 @@ fun AppNavigation(context: Context) {
             composable("register") {
                 RegisterScreen(
                     onBackClick = { navController.popBackStack() },
-                    onRegisterSuccess = { token ->
-                        prefs.edit {
-                            putBoolean("isLoggedIn", true)
-                            putString("access_token", token)
-                        }
-                        navController.navigate("home") {
-                            popUpTo("register") { inclusive = true }
-                        }
+                    onRegisterClick = { name, _, _ ->
+                        navController.navigate("location/$name")
                     }
                 )
             }
@@ -168,9 +162,8 @@ fun AppNavigation(context: Context) {
             }
 
             composable("profile") {
-                ProfileScreen(navController = navController)
+                ProfileScreen(navController)
             }
-
 
             composable("card/{cardId}") { backStackEntry ->
                 val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
@@ -222,7 +215,7 @@ fun ProfileScreen(
                     prefs.edit().clear().apply()
 
                     navController.navigate("welcome") {
-                        popUpTo(0) { inclusive = true } // Limpia todo el backstack
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
