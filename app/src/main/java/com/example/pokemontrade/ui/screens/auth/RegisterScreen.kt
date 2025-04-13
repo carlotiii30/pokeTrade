@@ -57,7 +57,6 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // Back icon
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
@@ -176,7 +175,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(345.dp))
 
-            // Botón de registro
             Button(
                 onClick = { onRegisterClick(name, email, password) },
                 modifier = Modifier
