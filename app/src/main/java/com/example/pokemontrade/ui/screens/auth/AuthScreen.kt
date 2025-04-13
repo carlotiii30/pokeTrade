@@ -101,7 +101,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onRegisterClick,
+                onClick = onLoginClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)

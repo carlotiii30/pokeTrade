@@ -4,27 +4,14 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
-import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,13 +23,16 @@ import com.example.pokemontrade.ui.screens.WelcomeScreen
 import com.example.pokemontrade.ui.screens.auth.AuthScreen
 import com.example.pokemontrade.ui.screens.auth.LoginScreen
 import com.example.pokemontrade.ui.screens.auth.RegisterScreen
-import com.example.pokemontrade.ui.screens.home.CardDetailScreen
+import com.example.pokemontrade.ui.screens.home.CardDetailHomeScreen
 import com.example.pokemontrade.ui.screens.home.HomeScreen
 import com.example.pokemontrade.ui.screens.inbox.InboxScreen
 import com.example.pokemontrade.ui.screens.inbox.TradeDetailScreen
 import com.example.pokemontrade.ui.screens.location.LocationScreen
-import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreen
-import com.example.pokemontrade.ui.theme.BluePrimary
+import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreenWrapper
+import com.example.pokemontrade.ui.screens.profile.CardDetailProfileScreen
+import com.example.pokemontrade.ui.screens.profile.settings.EditProfileScreen
+import com.example.pokemontrade.ui.screens.profile.ProfileScreen
+import com.example.pokemontrade.ui.screens.profile.SettingsScreen
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 
 class MainActivity : ComponentActivity() {
@@ -69,7 +59,11 @@ fun AppNavigation(context: Context) {
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute?.startsWith("detail/") == true ||
-            currentRoute in listOf("home", "inbox", "profile", "card/{cardId}")
+            currentRoute in listOf(
+        "home",
+        "inbox",
+        "profile",
+    )
 
 
     Scaffold(
@@ -122,7 +116,7 @@ fun AppNavigation(context: Context) {
 
             composable("select_location_map/{userName}") { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("userName") ?: ""
-                SelectLocationMapScreen(
+                SelectLocationMapScreenWrapper(
                     context = context,
                     navController = navController,
                     userName = name
@@ -154,25 +148,21 @@ fun AppNavigation(context: Context) {
                 )
             }
 
+            composable("card/{cardId}") { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
+                CardDetailHomeScreen(
+                    navController = navController,
+                    cardName = cardId.split("-").firstOrNull()?.trim() ?: "Carta",
+                    cardType = "Básico"
+                )
+            }
+
             composable("inbox") {
                 InboxScreen(
                     userName = userName,
                     onConversationClick = { convo ->
                         navController.navigate("detail/${convo.name}/${convo.time}")
                     }
-                )
-            }
-
-            composable("profile") {
-                ProfileScreen(navController)
-            }
-
-            composable("card/{cardId}") { backStackEntry ->
-                val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
-                CardDetailScreen(
-                    navController = navController,
-                    cardName = cardId.split("-").firstOrNull()?.trim() ?: "Carta",
-                    cardType = "Básico"
                 )
             }
 
@@ -195,38 +185,33 @@ fun AppNavigation(context: Context) {
                     onReject = { navController.popBackStack() }
                 )
             }
-        }
-    }
-}
 
-@Composable
-fun ProfileScreen(
-    navController: NavController
-) {
-    val context = LocalContext.current
-
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Perfil")
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
-                    prefs.edit().clear().apply()
-
-                    navController.navigate("welcome") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BluePrimary,
-                    contentColor = Color.White
+            composable("profile") {
+                ProfileScreen(
+                    userName = userName,
+                    navController = navController
                 )
-            ) {
-                Text("Cerrar sesión")
             }
+
+            composable("profile_card/{cardId}") { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
+                CardDetailProfileScreen(
+                    navController = navController,
+                    cardName = cardId.split("-").firstOrNull()?.trim() ?: "Carta",
+                    cardType = "Básico"
+                )
+            }
+
+            composable("settings") {
+                SettingsScreen(navController = navController)
+            }
+
+            composable("edit_profile") {
+                EditProfileScreen(
+                    navController = navController
+                )
+            }
+
         }
     }
 }
