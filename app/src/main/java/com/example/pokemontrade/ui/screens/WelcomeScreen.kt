@@ -55,7 +55,7 @@ fun WelcomeScreen(onSlideComplete: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun WelcomeScreenPreview() {
     PokemonTradeTheme {
