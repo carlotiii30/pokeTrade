@@ -93,7 +93,7 @@ fun LocationScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(470.dp))
+        Spacer(modifier = Modifier.height(430.dp))
 
         // Botón de continuar
         Button(

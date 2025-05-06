@@ -1,5 +1,7 @@
 package com.example.pokemontrade.ui.screens.auth
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,11 +29,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -40,25 +44,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.theme.BluePrimary
 import com.example.pokemontrade.ui.theme.DisabledBlue
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     onBackClick: () -> Unit = {},
-    onLoginClick: (email: String, password: String) -> Unit = { _, _ -> },
+    onLoginSuccess: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+    val viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(RetrofitInstance.api)
+    )
+    val scope = rememberCoroutineScope()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     val isFormValid = email.isNotBlank() && password.isNotBlank()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
@@ -75,10 +88,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    horizontal = 24.dp,
-                    vertical = 0.dp
-                )
+                .padding(horizontal = 24.dp)
         ) {
             Text(
                 text = "¡Te damos la bienvenida!",
@@ -93,12 +103,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = {
-                    Text(
-                        text = "Dirección de e-mail",
-                        color = BluePrimary
-                    )
-                },
+                label = { Text("Dirección de e-mail", color = BluePrimary) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -113,24 +118,14 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = {
-                    Text(
-                        text = "Contraseña",
-                        color = BluePrimary
-                    )
-                },
+                label = { Text("Contraseña", color = BluePrimary) },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = DisabledBlue,
-                    unfocusedBorderColor = DisabledBlue,
-                ),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     val icon =
                         if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
                     val description =
                         if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
-
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = icon,
@@ -139,7 +134,11 @@ fun LoginScreen(
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = DisabledBlue,
+                    unfocusedBorderColor = DisabledBlue,
+                )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -158,7 +157,34 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(360.dp))
 
             Button(
-                onClick = { onLoginClick(email, password) },
+                onClick = {
+                    scope.launch {
+                        viewModel.login(
+                            email = email,
+                            password = password,
+                            onSuccess = {
+                                scope.launch {
+                                    tokenManager.saveToken(it.access_token)
+                                    val name = it.user.username
+
+                                    context.getSharedPreferences(
+                                        "UserSession",
+                                        Context.MODE_PRIVATE
+                                    ).edit {
+                                        putBoolean("isLoggedIn", true)
+                                        putString("name", name)
+                                    }
+
+                                    Toast.makeText(context, "Hola $name", Toast.LENGTH_SHORT).show()
+                                    onLoginSuccess()
+                                }
+                            },
+                            onError = {
+                                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)

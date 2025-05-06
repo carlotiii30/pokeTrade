@@ -99,7 +99,7 @@ fun AppNavigation(context: Context) {
             composable("register") {
                 RegisterScreen(
                     onBackClick = { navController.popBackStack() },
-                    onRegisterClick = { name, _, _ ->
+                    onRegisterClick = { name, _, _, _ ->
                         navController.navigate("location/$name")
                     }
                 )
@@ -126,11 +126,7 @@ fun AppNavigation(context: Context) {
             composable("login") {
                 LoginScreen(
                     onBackClick = { navController.popBackStack() },
-                    onLoginClick = { name, _ ->
-                        prefs.edit {
-                            putBoolean("isLoggedIn", true)
-                            putString("name", name)
-                        }
+                    onLoginSuccess = {
                         navController.navigate("home") {
                             popUpTo("auth") { inclusive = true }
                         }
