@@ -60,9 +60,8 @@ fun LoginScreen(
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
-    val viewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(RetrofitInstance.api)
-    )
+    val viewModel: AuthViewModel =
+        viewModel(factory = AuthViewModelFactory(RetrofitInstance.unauthenticatedApi))
     val scope = rememberCoroutineScope()
 
     var email by remember { mutableStateOf("") }
@@ -164,7 +163,7 @@ fun LoginScreen(
                             password = password,
                             onSuccess = {
                                 scope.launch {
-                                    tokenManager.saveToken(it.access_token)
+                                    tokenManager.saveToken(it.accessToken)
                                     val name = it.user.username
 
                                     context.getSharedPreferences(

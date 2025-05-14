@@ -12,12 +12,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.edit
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.ui.components.BottomNavigationBar
 import com.example.pokemontrade.ui.screens.WelcomeScreen
 import com.example.pokemontrade.ui.screens.auth.AuthScreen
@@ -33,6 +35,7 @@ import com.example.pokemontrade.ui.screens.profile.CardDetailProfileScreen
 import com.example.pokemontrade.ui.screens.profile.settings.EditProfileScreen
 import com.example.pokemontrade.ui.screens.profile.ProfileScreen
 import com.example.pokemontrade.ui.screens.profile.SettingsScreen
+import com.example.pokemontrade.ui.screens.profile.cards.AddCardScreen
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +48,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 
 @Composable
 fun AppNavigation(context: Context) {
@@ -189,14 +193,21 @@ fun AppNavigation(context: Context) {
                 )
             }
 
-            composable("profile_card/{cardId}") { backStackEntry ->
-                val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
+            composable(
+                "profile_card/{cardId}",
+                arguments = listOf(navArgument("cardId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getInt("cardId") ?: return@composable
                 CardDetailProfileScreen(
                     navController = navController,
-                    cardName = cardId.split("-").firstOrNull()?.trim() ?: "Carta",
-                    cardType = "Básico"
+                    cardId = cardId
                 )
             }
+
+            composable("add_card") {
+                AddCardScreen(navController = navController)
+            }
+
 
             composable("settings") {
                 SettingsScreen(navController = navController)

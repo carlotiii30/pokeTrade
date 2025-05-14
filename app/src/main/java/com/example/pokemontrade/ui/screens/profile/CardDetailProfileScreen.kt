@@ -1,5 +1,6 @@
 package com.example.pokemontrade.ui.screens.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,32 +10,43 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pokemontrade.R
+import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
+import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
+import kotlinx.coroutines.launch
 
 @Composable
 fun CardDetailProfileScreen(
     navController: NavController,
+    cardId: Int,
     cardName: String = "Togedemaru",
     cardType: String = "Básico",
-    cardImageRes: Int = R.drawable.cards_header,
-    onDeleteClick: () -> Unit = {}
+    cardImageRes: Int = R.drawable.cards_header
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+    val viewModel: CardsViewModel = viewModel(factory = CardsViewModelFactory(tokenManager))
+    val scope = rememberCoroutineScope()
+
+
+    Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -49,11 +61,7 @@ fun CardDetailProfileScreen(
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = cardType,
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
+                Text(text = cardType, fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
             }
 
             IconButton(
@@ -70,7 +78,6 @@ fun CardDetailProfileScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Imagen de la carta
         Image(
             painter = painterResource(id = cardImageRes),
             contentDescription = "Carta Pokémon",
@@ -84,9 +91,25 @@ fun CardDetailProfileScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Botón de eliminar
         Button(
-            onClick = onDeleteClick,
+            onClick = {
+                scope.launch {
+                    viewModel.deleteCard(
+                        cardId = cardId,
+                        onSuccess = {
+                            Toast.makeText(context, "Carta eliminada", Toast.LENGTH_SHORT).show()
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("card_deleted", true)
+
+                            navController.popBackStack()
+                        },
+                        onError = {
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            },
             modifier = Modifier
                 .padding(24.dp)
                 .fillMaxWidth()
@@ -94,16 +117,11 @@ fun CardDetailProfileScreen(
                 .clip(RoundedCornerShape(40.dp)),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
-                contentColor = RedPrimary,
-                disabledContainerColor = Color.Transparent
+                contentColor = RedPrimary
             ),
             border = BorderStroke(1.dp, RedPrimary.copy(alpha = 0.5f)),
         ) {
-            Text(
-                text = "Eliminar carta",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "Eliminar carta", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

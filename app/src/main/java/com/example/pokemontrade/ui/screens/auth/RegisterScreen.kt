@@ -56,7 +56,8 @@ fun RegisterScreen(
     onRegisterClick: (name: String, username: String, email: String, password: String) -> Unit = { _, _, _, _ -> }
 ) {
     val context = LocalContext.current
-    val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(RetrofitInstance.api))
+    val viewModel: AuthViewModel =
+        viewModel(factory = AuthViewModelFactory(RetrofitInstance.unauthenticatedApi))
     val tokenManager = remember { TokenManager(context) }
     val scope = rememberCoroutineScope()
 
@@ -189,7 +190,7 @@ fun RegisterScreen(
                             password = password,
                             onSuccess = {
                                 scope.launch {
-                                    tokenManager.saveToken(it.access_token)
+                                    tokenManager.saveToken(it.accessToken)
                                     context.getSharedPreferences(
                                         "UserSession",
                                         Context.MODE_PRIVATE

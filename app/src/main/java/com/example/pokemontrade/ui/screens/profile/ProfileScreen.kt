@@ -3,16 +3,7 @@ package com.example.pokemontrade.ui.screens.profile
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -27,20 +18,23 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.pokemontrade.R
+import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
+import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
 
 @Composable
@@ -50,8 +44,30 @@ fun ProfileScreen(
     ratingCount: Int = 3,
     navController: NavController
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+    val viewModel: CardsViewModel = viewModel(factory = CardsViewModelFactory(tokenManager))
+    val cards by viewModel.cards.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.loadMyCards()
+    }
+
+    LaunchedEffect(navController.currentBackStackEntry) {
+        if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_created") == true) {
+            viewModel.loadMyCards()
+            navController.currentBackStackEntry?.savedStateHandle?.set("card_created", false)
+        }
+    }
+
+    LaunchedEffect(navController.currentBackStackEntry) {
+        if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_deleted") == true) {
+            viewModel.loadMyCards()
+            navController.currentBackStackEntry?.savedStateHandle?.set("card_deleted", false)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -91,20 +107,16 @@ fun ProfileScreen(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Text(
-                    text = "Entrenadora Pokémon",
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
+                Text(text = "Entrenadora Pokémon", fontSize = 16.sp, color = Color.White)
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     repeat(5) { i ->
                         val icon = when {
-                            averageRating >= i + 1 -> Icons.Filled.Star
+                            averageRating >= i + 1 -> Icons.Default.Star
                             averageRating > i -> Icons.AutoMirrored.Filled.StarHalf
-                            else -> Icons.Filled.StarBorder
+                            else -> Icons.Default.StarBorder
                         }
                         Icon(
                             imageVector = icon,
@@ -123,18 +135,12 @@ fun ProfileScreen(
             }
 
             IconButton(
-                onClick = {
-                    navController.navigate("settings")
-                },
+                onClick = { navController.navigate("settings") },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(horizontal = 16.dp)
             ) {
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = "Ajustes",
-                    tint = Color.White
-                )
+                Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = Color.White)
             }
         }
 
@@ -147,24 +153,13 @@ fun ProfileScreen(
             modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
         )
 
-        val cards = listOf(
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header,
-            R.drawable.cards_header
-        )
-
-        val galleryItems = cards + -1
+        val galleryItems = cards.map { it.id } + -1
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),
             modifier = Modifier.padding(horizontal = 12.dp)
         ) {
-            items(galleryItems) { card ->
+            items(galleryItems) { cardId ->
                 Box(
                     modifier = Modifier
                         .padding(6.dp)
@@ -174,51 +169,45 @@ fun ProfileScreen(
                         .background(Color.LightGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (card == -1) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Añadir carta",
-                            tint = Color.DarkGray,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    } else {
+                    if (cardId == -1) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clickable {
-                                    navController.navigate("profile_card/Togedemaru-Básico")
-                                }
+                                    navController.navigate("add_card") {
+                                        launchSingleTop = true
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(card),
-                                contentDescription = "Carta",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Añadir carta",
+                                tint = Color.DarkGray,
+                                modifier = Modifier.size(32.dp)
                             )
                         }
-
+                    } else {
+                        val card = cards.firstOrNull { it.id == cardId }
+                        if (card != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable {
+                                        navController.navigate("profile_card/${card.id}")
+                                    }
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.cards_header),
+                                    contentDescription = "Carta",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-
-
-@Preview(
-    showBackground = true,
-    showSystemUi = true
-)
-@Composable
-fun PreviewProfileScreen() {
-    val navController = rememberNavController()
-
-    ProfileScreen(
-        averageRating = 3.5f,
-        ratingCount = 3,
-        navController = navController
-    )
-}
-
-
-

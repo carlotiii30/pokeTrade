@@ -1,5 +1,7 @@
 package com.example.pokemontrade.data.models.auth
 
+import com.google.gson.annotations.SerializedName
+
 data class AuthUser(
     val id: Int,
     val name: String,
@@ -12,8 +14,9 @@ data class AuthUser(
 
 data class AuthResponse(
     val user: AuthUser,
-    val access_token: String
+    @SerializedName("access_token") val accessToken: String
 )
+
 
 data class RegisterRequest(
     val name: String,
