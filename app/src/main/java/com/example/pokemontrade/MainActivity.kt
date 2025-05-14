@@ -1,42 +1,29 @@
 package com.example.pokemontrade
 
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.core.content.edit
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.ui.components.BottomNavigationBar
-import com.example.pokemontrade.ui.screens.WelcomeScreen
-import com.example.pokemontrade.ui.screens.auth.AuthScreen
-import com.example.pokemontrade.ui.screens.auth.LoginScreen
-import com.example.pokemontrade.ui.screens.auth.RegisterScreen
-import com.example.pokemontrade.ui.screens.home.CardDetailHomeScreen
-import com.example.pokemontrade.ui.screens.home.HomeScreen
-import com.example.pokemontrade.ui.screens.inbox.InboxScreen
-import com.example.pokemontrade.ui.screens.inbox.TradeDetailScreen
-import com.example.pokemontrade.ui.screens.location.LocationScreen
-import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreenWrapper
-import com.example.pokemontrade.ui.screens.profile.CardDetailProfileScreen
-import com.example.pokemontrade.ui.screens.profile.settings.EditProfileScreen
-import com.example.pokemontrade.ui.screens.profile.ProfileScreen
-import com.example.pokemontrade.ui.screens.profile.SettingsScreen
+import com.example.pokemontrade.ui.screens.*
+import com.example.pokemontrade.ui.screens.auth.*
+import com.example.pokemontrade.ui.screens.home.*
+import com.example.pokemontrade.ui.screens.inbox.*
+import com.example.pokemontrade.ui.screens.location.*
+import com.example.pokemontrade.ui.screens.profile.*
 import com.example.pokemontrade.ui.screens.profile.cards.AddCardScreen
+import com.example.pokemontrade.ui.screens.profile.settings.EditProfileScreen
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
+import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +36,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun AppNavigation(context: Context) {
     val navController = rememberNavController()
@@ -59,24 +45,15 @@ fun AppNavigation(context: Context) {
     val userName = prefs.getString("name", "Entrenador") ?: "Entrenador"
 
     val startDestination = if (isLoggedIn.value) "home" else "welcome"
-
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute?.startsWith("detail/") == true ||
-            currentRoute in listOf(
-        "home",
-        "inbox",
-        "profile",
-    )
-
+            currentRoute in listOf("home", "inbox", "profile")
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                BottomNavigationBar(
-                    navController = navController,
-                    currentRoute = currentRoute ?: ""
-                )
+                BottomNavigationBar(navController = navController, currentRoute = currentRoute ?: "")
             }
         }
     ) { innerPadding ->
@@ -86,11 +63,11 @@ fun AppNavigation(context: Context) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("welcome") {
-                WelcomeScreen(onSlideComplete = {
+                WelcomeScreen {
                     navController.navigate("auth") {
                         popUpTo("welcome") { inclusive = true }
                     }
-                })
+                }
             }
 
             composable("auth") {
@@ -111,20 +88,12 @@ fun AppNavigation(context: Context) {
 
             composable("location/{name}") { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: ""
-                LocationScreen(
-                    context = context,
-                    navController = navController,
-                    userName = name
-                )
+                LocationScreen(context, navController, userName = name)
             }
 
             composable("select_location_map/{userName}") { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("userName") ?: ""
-                SelectLocationMapScreenWrapper(
-                    context = context,
-                    navController = navController,
-                    userName = name
-                )
+                SelectLocationMapScreenWrapper(context, navController, userName = name)
             }
 
             composable("login") {
@@ -135,26 +104,24 @@ fun AppNavigation(context: Context) {
                             popUpTo("auth") { inclusive = true }
                         }
                     },
-                    onForgotPasswordClick = { }
+                    onForgotPasswordClick = {}
                 )
             }
 
             composable("home") {
-                HomeScreen(
-                    context = context,
-                    onCardClick = { cardId ->
-                        navController.navigate("card/$cardId")
-                    }
-                )
+                HomeScreen(context = context) { card ->
+                    val cardJson = Uri.encode(Gson().toJson(card))
+                    navController.navigate("card/$cardJson")
+                }
             }
 
-            composable("card/{cardId}") { backStackEntry ->
-                val cardId = backStackEntry.arguments?.getString("cardId") ?: "Carta"
-                CardDetailHomeScreen(
-                    navController = navController,
-                    cardName = cardId.split("-").firstOrNull()?.trim() ?: "Carta",
-                    cardType = "Básico"
-                )
+            composable(
+                "card/{cardJson}",
+                arguments = listOf(navArgument("cardJson") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val cardJson = backStackEntry.arguments?.getString("cardJson") ?: return@composable
+                val card = Gson().fromJson(cardJson, CardResponse::class.java)
+                CardDetailHomeScreen(navController = navController, card = card)
             }
 
             composable("inbox") {
@@ -175,7 +142,6 @@ fun AppNavigation(context: Context) {
             ) { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: ""
                 val time = backStackEntry.arguments?.getString("time") ?: ""
-
                 TradeDetailScreen(
                     proposer = name,
                     time = time,
@@ -187,38 +153,29 @@ fun AppNavigation(context: Context) {
             }
 
             composable("profile") {
-                ProfileScreen(
-                    userName = userName,
-                    navController = navController
-                )
+                ProfileScreen(userName = userName, navController = navController)
             }
 
             composable(
-                "profile_card/{cardId}",
-                arguments = listOf(navArgument("cardId") { type = NavType.IntType })
+                "profile_card/{cardJson}",
+                arguments = listOf(navArgument("cardJson") { type = NavType.StringType })
             ) { backStackEntry ->
-                val cardId = backStackEntry.arguments?.getInt("cardId") ?: return@composable
-                CardDetailProfileScreen(
-                    navController = navController,
-                    cardId = cardId
-                )
+                val cardJson = backStackEntry.arguments?.getString("cardJson") ?: return@composable
+                val card = Gson().fromJson(cardJson, CardResponse::class.java)
+                CardDetailProfileScreen(navController = navController, card = card)
             }
 
             composable("add_card") {
                 AddCardScreen(navController = navController)
             }
 
-
             composable("settings") {
                 SettingsScreen(navController = navController)
             }
 
             composable("edit_profile") {
-                EditProfileScreen(
-                    navController = navController
-                )
+                EditProfileScreen(navController = navController)
             }
-
         }
     }
 }

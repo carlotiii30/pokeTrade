@@ -1,7 +1,6 @@
 package com.example.pokemontrade.ui.screens.home
 
 import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -28,21 +28,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.pokemontrade.R
 import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.ui.theme.BluePrimary
 
 @Composable
 fun HomeScreen(
     context: Context,
-    onCardClick: (String) -> Unit = {}
+    onCardClick: (CardResponse) -> Unit = {}
 ) {
     val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
     val userName = prefs.getString("name", "Entrenador")
@@ -84,19 +85,19 @@ fun HomeScreen(
             onValueChange = { searchText = it },
             placeholder = { Text("Buscar", fontWeight = FontWeight.Black) },
             leadingIcon = {
-                Image(
+                Icon(
                     painter = painterResource(id = R.drawable.buscar),
                     contentDescription = "Buscar",
-                    modifier = Modifier.size(18.dp),
-                    colorFilter = ColorFilter.tint(androidx.compose.ui.graphics.Color.White)
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             },
             trailingIcon = {
-                Image(
+                Icon(
                     painter = painterResource(id = R.drawable.ic_pokeball),
                     contentDescription = "Pokeball",
-                    modifier = Modifier.size(56.dp),
-                    colorFilter = ColorFilter.tint(androidx.compose.ui.graphics.Color.White)
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(56.dp)
                 )
             },
             colors = TextFieldDefaults.colors(
@@ -125,15 +126,15 @@ fun HomeScreen(
         ) {
             items(cards.filter { it.name.contains(searchText, ignoreCase = true) }) { card ->
                 Card(
-                    onClick = { onCardClick(card.name) },
+                    onClick = { onCardClick(card) },
                     modifier = Modifier
                         .height(140.dp)
                         .fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.cards_header),
+                    AsyncImage(
+                        model = card.img,
                         contentDescription = "Carta de ${card.name}",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

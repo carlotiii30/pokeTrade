@@ -1,6 +1,5 @@
 package com.example.pokemontrade.ui.screens.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,19 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.pokemontrade.R
+import coil.compose.AsyncImage
+import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.ui.theme.BluePrimary
 
 @Composable
 fun CardDetailHomeScreen(
     navController: NavController,
-    cardName: String = "Togedemaru",
-    cardType: String = "Básico"
+    card: CardResponse
 ) {
     Column(
         modifier = Modifier
@@ -47,13 +45,13 @@ fun CardDetailHomeScreen(
         ) {
             Column {
                 Text(
-                    text = cardName,
+                    text = card.name,
                     fontSize = 20.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = cardType,
+                    text = card.type,
                     fontSize = 14.sp,
                     color = Color.White
                 )
@@ -73,15 +71,15 @@ fun CardDetailHomeScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Image(
-            painter = painterResource(id = R.drawable.cards_header),
+        AsyncImage(
+            model = card.img,
             contentDescription = "Carta Pokémon",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(460.dp)
                 .padding(horizontal = 42.dp, vertical = 12.dp)
                 .clip(RoundedCornerShape(12.dp)),
-        contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Crop
         )
     }
 }

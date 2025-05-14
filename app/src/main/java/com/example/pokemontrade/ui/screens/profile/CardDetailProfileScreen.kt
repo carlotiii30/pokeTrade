@@ -2,13 +2,22 @@ package com.example.pokemontrade.ui.screens.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,14 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.pokemontrade.R
-import com.example.pokemontrade.data.api.RetrofitInstance
+import coil.compose.AsyncImage
+import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
@@ -35,10 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CardDetailProfileScreen(
     navController: NavController,
-    cardId: Int,
-    cardName: String = "Togedemaru",
-    cardType: String = "Básico",
-    cardImageRes: Int = R.drawable.cards_header
+    card: CardResponse
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -56,12 +61,12 @@ fun CardDetailProfileScreen(
         ) {
             Column {
                 Text(
-                    text = cardName,
+                    text = card.name,
                     fontSize = 20.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                Text(text = cardType, fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+                Text(text = card.type, fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
             }
 
             IconButton(
@@ -78,8 +83,8 @@ fun CardDetailProfileScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Image(
-            painter = painterResource(id = cardImageRes),
+        AsyncImage(
+            model = card.img,
             contentDescription = "Carta Pokémon",
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,7 +100,7 @@ fun CardDetailProfileScreen(
             onClick = {
                 scope.launch {
                     viewModel.deleteCard(
-                        cardId = cardId,
+                        cardId = card.id,
                         onSuccess = {
                             Toast.makeText(context, "Carta eliminada", Toast.LENGTH_SHORT).show()
                             navController.previousBackStackEntry
