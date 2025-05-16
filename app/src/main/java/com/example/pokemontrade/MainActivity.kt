@@ -153,7 +153,7 @@ fun AppNavigation(context: Context) {
             }
 
             composable("profile") {
-                ProfileScreen(userName = userName, navController = navController)
+                ProfileScreen(navController = navController)
             }
 
             composable(

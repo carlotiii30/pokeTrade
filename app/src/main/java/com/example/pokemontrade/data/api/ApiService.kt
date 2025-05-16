@@ -1,10 +1,12 @@
 package com.example.pokemontrade.data.api
 
+import com.android.volley.Response
 import com.example.pokemontrade.data.models.auth.AuthResponse
 import com.example.pokemontrade.data.models.auth.LoginRequest
 import com.example.pokemontrade.data.models.auth.RegisterRequest
 import com.example.pokemontrade.data.models.cards.CardCreate
 import com.example.pokemontrade.data.models.cards.CardResponse
+import com.example.pokemontrade.data.models.users.UserProfile
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -17,6 +19,9 @@ interface ApiService {
 
     @POST("auth/register/")
     suspend fun register(@Body request: RegisterRequest): AuthResponse
+
+    @GET("users/profile")
+    suspend fun getUserProfile(): UserProfile
 
     @GET("cards/")
     suspend fun getMyCards(): List<CardResponse>

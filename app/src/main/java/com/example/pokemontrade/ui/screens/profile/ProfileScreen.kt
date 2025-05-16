@@ -4,16 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -28,11 +19,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,41 +33,54 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pokemontrade.R
+import com.example.pokemontrade.data.models.users.UserProfile
 import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
-    userName: String = "Carlota de la V.",
-    averageRating: Float = 4.0f,
-    ratingCount: Int = 3,
     navController: NavController
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
-    val viewModel: CardsViewModel = viewModel(factory = CardsViewModelFactory(tokenManager))
-    val cards by viewModel.cards.collectAsState()
+
+    val cardsViewModel: CardsViewModel = viewModel(factory = CardsViewModelFactory(tokenManager))
+    val usersViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+
+    val cards by cardsViewModel.cards.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    var profile by remember { mutableStateOf<UserProfile?>(null) }
 
     LaunchedEffect(Unit) {
-        viewModel.loadMyCards()
+        cardsViewModel.loadMyCards()
+        scope.launch {
+            profile = usersViewModel.getUserProfile()
+        }
     }
 
     LaunchedEffect(navController.currentBackStackEntry) {
         if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_created") == true) {
-            viewModel.loadMyCards()
+            cardsViewModel.loadMyCards()
             navController.currentBackStackEntry?.savedStateHandle?.set("card_created", false)
         }
     }
 
     LaunchedEffect(navController.currentBackStackEntry) {
         if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_deleted") == true) {
-            viewModel.loadMyCards()
+            cardsViewModel.loadMyCards()
             navController.currentBackStackEntry?.savedStateHandle?.set("card_deleted", false)
         }
     }
+
+    val userName = profile?.name ?: "Entrenador"
+    val averageRating = profile?.rating ?: 0f
+    val ratingCount = profile?.reviewsCount ?: 0
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
