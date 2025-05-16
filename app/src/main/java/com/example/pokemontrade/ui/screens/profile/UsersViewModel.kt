@@ -3,6 +3,7 @@ package com.example.pokemontrade.ui.screens.profile
 import androidx.lifecycle.ViewModel
 import com.example.pokemontrade.data.api.ApiService
 import com.example.pokemontrade.data.models.users.UserProfile
+import com.example.pokemontrade.data.models.users.UserProfileRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -18,6 +19,17 @@ class UsersViewModel(
             null
         }
     }
+
+    suspend fun updateUserProfile(updateRequest: UserProfileRequest): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            apiService.updateUserProfile(updateRequest)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 }
 
 

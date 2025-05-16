@@ -2,35 +2,86 @@ package com.example.pokemontrade.ui.screens.profile.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.pokemontrade.data.models.users.UserProfileRequest
+import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.profile.UsersViewModel
+import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
+import kotlinx.coroutines.launch
 
 @Composable
 fun EditProfileScreen(
     navController: NavController
 ) {
-    var name by remember { mutableStateOf("Carlota") }
-    var surname by remember { mutableStateOf("de la Vega") }
-    var phone by remember { mutableStateOf("+34 646 74 81 24") }
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+    val usersViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+
+    var name by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
+    var originalName by remember { mutableStateOf("") }
+    var originalLocation by remember { mutableStateOf("") }
+    var originalEmail by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val profile = usersViewModel.getUserProfile()
+        profile?.let {
+            originalName = it.name
+            originalLocation = it.location
+            originalEmail = it.email
+
+            name = it.name
+            location = it.location
+            email = it.email
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -76,13 +127,10 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileTextField(label = "Nombre", value = name, onValueChange = { name = it })
-            ProfileTextField(label = "Apellido", value = surname, onValueChange = { surname = it })
-            ProfileTextField(
-                label = "Teléfono",
-                value = phone,
-                onValueChange = { phone = it },
-                keyboardType = KeyboardType.Phone
-            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ProfileTextField(label = "Email", value = email, onValueChange = {email = it})
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -101,6 +149,28 @@ fun EditProfileScreen(
             }
 
             Divider(color = RedPrimary.copy(alpha = 0.5f))
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        val updateRequest = UserProfileRequest(
+                            name = if (name != originalName) name else null,
+                            email = if (email != originalEmail) email else null,
+                            location = if (location != originalLocation) location else null
+                        )
+
+                        val success = usersViewModel.updateUserProfile(updateRequest)
+                        if (success) {
+                            navController.popBackStack()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Guardar cambios")
+            }
         }
     }
 }
@@ -121,7 +191,7 @@ fun ProfileTextField(
             text = label,
             fontSize = 14.sp,
             color = RedPrimary.copy(alpha = 0.5f),
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier.padding(bottom = 0.dp)
         )
         TextField(
             value = value,
@@ -140,7 +210,6 @@ fun ProfileTextField(
         )
     }
 }
-
 
 @Preview(showSystemUi = true)
 @Composable

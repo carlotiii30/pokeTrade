@@ -16,12 +16,3 @@ data class AuthResponse(
     val user: AuthUser,
     @SerializedName("access_token") val accessToken: String
 )
-
-
-data class RegisterRequest(
-    val name: String,
-    val email: String,
-    val username: String,
-    val password: String,
-    val location: String = ""
-)
