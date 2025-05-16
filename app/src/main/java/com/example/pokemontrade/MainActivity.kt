@@ -13,6 +13,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.pokemontrade.data.models.cards.CardResponse
+import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.components.BottomNavigationBar
 import com.example.pokemontrade.ui.screens.*
 import com.example.pokemontrade.ui.screens.auth.*
@@ -39,12 +40,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(context: Context) {
     val navController = rememberNavController()
-    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
+    val tokenManager = remember { TokenManager(context) }
+    val token by tokenManager.getTokenFlow().collectAsState(initial = null)
+    val userProfile by tokenManager.getUserProfileFlow().collectAsState(initial = null)
 
-    val isLoggedIn = remember { mutableStateOf(prefs.getBoolean("isLoggedIn", false)) }
-    val userName = prefs.getString("name", "Entrenador") ?: "Entrenador"
+    val isLoggedIn = token != null
+    val userName = userProfile?.name ?: "Entrenador"
 
-    val startDestination = if (isLoggedIn.value) "home" else "welcome"
+    val startDestination = if (isLoggedIn) "home" else "welcome"
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
     val showBottomBar = currentRoute?.startsWith("detail/") == true ||

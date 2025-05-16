@@ -1,5 +1,6 @@
 package com.example.pokemontrade.ui.screens.profile.settings
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -161,8 +162,9 @@ fun EditProfileScreen(
                             location = if (location != originalLocation) location else null
                         )
 
-                        val success = usersViewModel.updateUserProfile(updateRequest)
-                        if (success) {
+                        val updatedProfile = usersViewModel.updateUserProfile(updateRequest)
+                        if (updatedProfile != null) {
+                            tokenManager.saveUserProfile(updatedProfile)
                             navController.popBackStack()
                         }
                     }

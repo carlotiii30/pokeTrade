@@ -45,8 +45,10 @@ fun HomeScreen(
     context: Context,
     onCardClick: (CardResponse) -> Unit = {}
 ) {
-    val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
-    val userName = prefs.getString("name", "Entrenador")
+    val tokenManager = remember { com.example.pokemontrade.data.storage.TokenManager(context) }
+    val userProfile by tokenManager.getUserProfileFlow().collectAsState(initial = null)
+
+    val userName = userProfile?.name ?: "Entrenador"
 
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(RetrofitInstance.unauthenticatedApi)
@@ -72,10 +74,11 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = userName ?: "Entrenador",
+                text = userName,
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Black
             )
+
         }
 
         Spacer(modifier = Modifier.height(24.dp))

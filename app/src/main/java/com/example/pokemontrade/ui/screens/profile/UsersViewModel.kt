@@ -20,13 +20,12 @@ class UsersViewModel(
         }
     }
 
-    suspend fun updateUserProfile(updateRequest: UserProfileRequest): Boolean = withContext(Dispatchers.IO) {
+    suspend fun updateUserProfile(updateRequest: UserProfileRequest): UserProfile? = withContext(Dispatchers.IO) {
         return@withContext try {
             apiService.updateUserProfile(updateRequest)
-            true
         } catch (e: Exception) {
             e.printStackTrace()
-            false
+            null
         }
     }
 
