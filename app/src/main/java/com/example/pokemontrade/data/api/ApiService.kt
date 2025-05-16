@@ -29,6 +29,9 @@ interface ApiService {
         @Body user: UserProfileRequest
     ): UserProfile
 
+    @GET("users/{id}")
+    suspend fun getUserById(@Path("id") id: Int): UserProfile
+
     @GET("cards/")
     suspend fun getMyCards(): List<CardResponse>
 
@@ -44,4 +47,9 @@ interface ApiService {
 
     @GET("cards/all/")
     suspend fun getAllCards(): List<CardResponse>
+
+    @GET("cards/user/{id}/")
+    suspend fun getUserCards(
+        @Path("id") userId: String
+    ): List<CardResponse>
 }

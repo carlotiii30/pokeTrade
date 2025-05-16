@@ -18,6 +18,7 @@ import com.example.pokemontrade.ui.components.BottomNavigationBar
 import com.example.pokemontrade.ui.screens.*
 import com.example.pokemontrade.ui.screens.auth.*
 import com.example.pokemontrade.ui.screens.home.*
+import com.example.pokemontrade.ui.screens.home.users.UserProfileScreen
 import com.example.pokemontrade.ui.screens.inbox.*
 import com.example.pokemontrade.ui.screens.location.*
 import com.example.pokemontrade.ui.screens.profile.*
@@ -126,6 +127,15 @@ fun AppNavigation(context: Context) {
                 val card = Gson().fromJson(cardJson, CardResponse::class.java)
                 CardDetailHomeScreen(navController = navController, card = card)
             }
+
+            composable(
+                "user_profile/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                UserProfileScreen(navController = navController, userId = userId)
+            }
+
 
             composable("inbox") {
                 InboxScreen(

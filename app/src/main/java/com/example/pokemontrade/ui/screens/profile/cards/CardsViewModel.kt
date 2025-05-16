@@ -51,4 +51,16 @@ class CardsViewModel(private val api: ApiService) : ViewModel() {
             }
         }
     }
+
+    fun loadUserCards(userId: String) {
+        viewModelScope.launch {
+            try {
+                val response = api.getUserCards(userId)
+                _cards.value = response
+            } catch (e: Exception) {
+                _cards.value = emptyList()
+            }
+        }
+    }
+
 }

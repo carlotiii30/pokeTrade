@@ -1,18 +1,17 @@
-package com.example.pokemontrade.ui.screens.profile
+package com.example.pokemontrade.ui.screens.home.cards
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.data.storage.TokenManager
 
-
-class UsersViewModelFactory(
+class CardDetailHomeViewModelFactory(
     private val tokenManager: TokenManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(UsersViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(CardDetailHomeViewModel::class.java)) {
             val api = RetrofitInstance.getAuthenticatedApi(tokenManager)
-            return UsersViewModel(api) as T
+            return CardDetailHomeViewModel(api) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
