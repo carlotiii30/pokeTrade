@@ -57,7 +57,6 @@ fun CardDetailProfileScreen(
                 .fillMaxWidth()
                 .background(RedPrimary)
                 .padding(horizontal = 24.dp, vertical = 24.dp)
-                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
         ) {
             Column {
                 Text(
@@ -66,7 +65,11 @@ fun CardDetailProfileScreen(
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                Text(text = card.type, fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+                Text(
+                    text = card.type,
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
             }
 
             IconButton(

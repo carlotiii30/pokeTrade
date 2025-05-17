@@ -15,5 +15,6 @@ val RedPrimary = Color(0xFFF93D32)
 val GreenPrimary = Color(0xFF7FC9AE)
 
 val DisabledBlue = Color(0xFF85A2DA)
+val DisabledRed = Color(0xFFFF9F9A)
 val LightGreen = Color(0xFFDCFFF6)
 val LightGray = Color(0xFFE1E0E0)

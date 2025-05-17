@@ -169,7 +169,7 @@ fun UserProfileScreen(
                         .background(Color.LightGray)
                         .clickable {
                             val cardJson = Uri.encode(Gson().toJson(card))
-                            navController.navigate("profile_card/$cardJson")
+                            navController.navigate("card/$cardJson")
                         }
                 ) {
                     AsyncImage(
