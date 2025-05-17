@@ -2,32 +2,50 @@ package com.example.pokemontrade
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.components.BottomNavigationBar
-import com.example.pokemontrade.ui.screens.*
-import com.example.pokemontrade.ui.screens.auth.*
-import com.example.pokemontrade.ui.screens.home.*
+import com.example.pokemontrade.ui.screens.WelcomeScreen
+import com.example.pokemontrade.ui.screens.auth.AuthScreen
+import com.example.pokemontrade.ui.screens.auth.LoginScreen
+import com.example.pokemontrade.ui.screens.auth.RegisterScreen
+import com.example.pokemontrade.ui.screens.home.HomeScreen
+import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeScreen
 import com.example.pokemontrade.ui.screens.home.users.UserProfileScreen
-import com.example.pokemontrade.ui.screens.inbox.*
-import com.example.pokemontrade.ui.screens.location.*
-import com.example.pokemontrade.ui.screens.profile.*
+import com.example.pokemontrade.ui.screens.home.users.reviews.UserReviewsScreen
+import com.example.pokemontrade.ui.screens.inbox.InboxScreen
+import com.example.pokemontrade.ui.screens.inbox.TradeDetailScreen
+import com.example.pokemontrade.ui.screens.location.LocationScreen
+import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreenWrapper
+import com.example.pokemontrade.ui.screens.profile.ProfileScreen
 import com.example.pokemontrade.ui.screens.profile.cards.AddCardScreen
+import com.example.pokemontrade.ui.screens.profile.cards.CardDetailProfileScreen
+import com.example.pokemontrade.ui.screens.profile.reviews.ReviewsScreen
 import com.example.pokemontrade.ui.screens.profile.settings.EditProfileScreen
+import com.example.pokemontrade.ui.screens.profile.settings.SettingsScreen
 import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -38,26 +56,30 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(context: Context) {
     val navController = rememberNavController()
     val tokenManager = remember { TokenManager(context) }
     val token by tokenManager.getTokenFlow().collectAsState(initial = null)
-    val userProfile by tokenManager.getUserProfileFlow().collectAsState(initial = null)
 
     val isLoggedIn = token != null
-    val userName = userProfile?.name ?: "Entrenador"
 
     val startDestination = if (isLoggedIn) "home" else "welcome"
     val currentBackStack by navController.currentBackStackEntryAsState()
+
     val currentRoute = currentBackStack?.destination?.route
-    val showBottomBar = currentRoute?.startsWith("detail/") == true ||
-            currentRoute in listOf("home", "inbox", "profile")
+    val prefixes = listOf("user_profile/", "card/", "detail/", "user_reviews/")
+    val showBottomBar = prefixes.any { prefix -> currentRoute?.startsWith(prefix) == true } ||
+            currentRoute in listOf("home", "inbox", "profile", "reviews")
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                BottomNavigationBar(navController = navController, currentRoute = currentRoute ?: "")
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute ?: ""
+                )
             }
         }
     ) { innerPadding ->
@@ -136,10 +158,19 @@ fun AppNavigation(context: Context) {
                 UserProfileScreen(navController = navController, userId = userId)
             }
 
+            composable("user_reviews/{userId}") { backStackEntry ->
+                val userId =
+                    backStackEntry.arguments?.getString("userId")?.toInt() ?: return@composable
+                UserReviewsScreen(
+                    userId = userId,
+                    navController = navController,
+                    tokenManager = tokenManager
+                )
+            }
+
 
             composable("inbox") {
                 InboxScreen(
-                    userName = userName,
                     onConversationClick = { convo ->
                         navController.navigate("detail/${convo.name}/${convo.time}")
                     }
@@ -188,6 +219,10 @@ fun AppNavigation(context: Context) {
 
             composable("edit_profile") {
                 EditProfileScreen(navController = navController)
+            }
+
+            composable("reviews") {
+                ReviewsScreen(navController = navController, tokenManager = tokenManager)
             }
         }
     }

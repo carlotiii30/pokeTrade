@@ -1,4 +1,4 @@
-package com.example.pokemontrade.ui.screens.home
+package com.example.pokemontrade.ui.screens.home.cards
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -42,8 +42,6 @@ import coil.compose.AsyncImage
 import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.data.models.users.UserProfile
 import com.example.pokemontrade.data.storage.TokenManager
-import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModel
-import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModelFactory
 import com.example.pokemontrade.ui.theme.BluePrimary
 
 @Composable

@@ -1,5 +1,7 @@
 package com.example.pokemontrade.data.models.users
 
+import com.google.gson.annotations.SerializedName
+
 data class UserProfile(
     val id: Int,
     val name: String,
@@ -7,5 +9,5 @@ data class UserProfile(
     val username: String,
     val location: String,
     val rating: Float? = null,
-    val reviewsCount: Int = 0
+    @SerializedName("reviews_count") val reviewsCount: Int = 0
 )

@@ -20,16 +20,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pokemontrade.R
+import com.example.pokemontrade.ui.screens.profile.UsersViewModel
+import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.GreenPrimary
 import com.example.pokemontrade.ui.theme.LightGray
 import com.example.pokemontrade.ui.theme.LightGreen
@@ -37,10 +46,22 @@ import com.example.pokemontrade.ui.theme.LightGreen
 
 @Composable
 fun InboxScreen(
-    userName: String = "Carlota",
     conversations: List<Conversation> = sampleConversations,
     onConversationClick: (Conversation) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val tokenManager = remember { com.example.pokemontrade.data.storage.TokenManager(context) }
+    val usersViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+
+    var userName by remember { mutableStateOf("Entrenador") }
+
+    LaunchedEffect(Unit) {
+        val profile = usersViewModel.getUserProfile()
+        profile?.let {
+            userName = it.name
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -71,18 +92,16 @@ fun InboxScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.buscar),
                     contentDescription = "Buscar",
-                    modifier = Modifier.run {
-                        size(36.dp)
-                            .background(Color.White, shape = CircleShape)
-                            .padding(8.dp)
-                    }
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color.White, shape = CircleShape)
+                        .padding(8.dp)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Lista de conversaciones
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(conversations) { convo ->
                 ConversationItem(convo, onClick = { onConversationClick(convo) })
@@ -133,12 +152,3 @@ val sampleConversations = listOf(
     Conversation("Antonio R.", "09:10 am"),
     Conversation("Paula G.", "20:23 am")
 )
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewInboxScreen() {
-    InboxScreen(
-        userName = "Carlota",
-        conversations = sampleConversations
-    )
-}

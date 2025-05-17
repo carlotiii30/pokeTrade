@@ -5,6 +5,7 @@ import com.example.pokemontrade.data.models.auth.LoginRequest
 import com.example.pokemontrade.data.models.auth.RegisterRequest
 import com.example.pokemontrade.data.models.cards.CardCreate
 import com.example.pokemontrade.data.models.cards.CardResponse
+import com.example.pokemontrade.data.models.reviews.ReviewResponse
 import com.example.pokemontrade.data.models.users.UserProfile
 import com.example.pokemontrade.data.models.users.UserProfileRequest
 import retrofit2.http.Body
@@ -52,4 +53,8 @@ interface ApiService {
     suspend fun getUserCards(
         @Path("id") userId: String
     ): List<CardResponse>
+
+    @GET("reviews/user/{userId}")
+    suspend fun getReviewsByUser(@Path("userId") userId: Int): List<ReviewResponse>
+
 }

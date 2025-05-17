@@ -46,6 +46,8 @@ import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.data.models.cards.CardType
 import com.example.pokemontrade.data.models.cards.toBackendValue
+import com.example.pokemontrade.ui.screens.profile.UsersViewModel
+import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.BluePrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,20 +57,20 @@ fun HomeScreen(
     onCardClick: (CardResponse) -> Unit = {}
 ) {
     val tokenManager = remember { com.example.pokemontrade.data.storage.TokenManager(context) }
-    val userProfile by tokenManager.getUserProfileFlow().collectAsState(initial = null)
+    val userViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+    val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(RetrofitInstance.unauthenticatedApi))
 
-    val userName = userProfile?.name ?: "Entrenador"
-
-    val viewModel: HomeViewModel = viewModel(
-        factory = HomeViewModelFactory(RetrofitInstance.unauthenticatedApi)
-    )
-    val cards by viewModel.cards.collectAsState()
+    val cards by homeViewModel.cards.collectAsState()
 
     var searchText by remember { mutableStateOf("") }
+    var profile by remember { mutableStateOf<com.example.pokemontrade.data.models.users.UserProfile?>(null) }
 
     LaunchedEffect(Unit) {
-        viewModel.loadAllCards()
+        homeViewModel.loadAllCards()
+        profile = userViewModel.getUserProfile()
     }
+
+    val userName = profile?.name ?: "Entrenador"
 
     Column(
         modifier = Modifier
@@ -76,18 +78,9 @@ fun HomeScreen(
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Column {
-            Text(
-                text = "Hola,",
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Black
-            )
+            Text("Hola,", fontSize = 40.sp, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = userName,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Black
-            )
-
+            Text(userName, fontSize = 40.sp, fontWeight = FontWeight.Black)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -142,16 +135,12 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             TextField(
-                value = selectedType?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
-                    ?: "Todos",
+                value = selectedType?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Tipos") },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null
-                    )
+                    Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
                 },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFFF2F2F2),
@@ -159,9 +148,7 @@ fun HomeScreen(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black,
-                    focusedPlaceholderColor = Color.Gray,
-                    unfocusedPlaceholderColor = Color.Gray
+                    unfocusedTextColor = Color.Black
                 ),
                 modifier = Modifier
                     .menuAnchor()
@@ -173,8 +160,7 @@ fun HomeScreen(
                 onDismissRequest = { expanded = false }
             ) {
                 allTypes.forEach { type ->
-                    val typeName =
-                        type?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos"
+                    val typeName = type?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos"
                     DropdownMenuItem(
                         text = { Text(typeName) },
                         onClick = {
@@ -189,9 +175,9 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         val filteredCards = cards.filter { card ->
-            val matchesType =
-                selectedType?.toBackendValue()?.let { card.type.equals(it, ignoreCase = true) }
-                    ?: true
+            val matchesType = selectedType?.toBackendValue()?.let {
+                card.type.equals(it, ignoreCase = true)
+            } ?: true
             val matchesSearch = card.name.contains(searchText, ignoreCase = true)
             matchesType && matchesSearch
         }

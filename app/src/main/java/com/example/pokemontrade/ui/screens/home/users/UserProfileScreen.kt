@@ -122,7 +122,12 @@ fun UserProfileScreen(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        navController.navigate("user_reviews/$userId")
+                    }
+                ) {
                     repeat(5) { i ->
                         val icon = when {
                             averageRating >= i + 1 -> Icons.Default.Star

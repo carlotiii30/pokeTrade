@@ -1,4 +1,4 @@
-package com.example.pokemontrade.ui.screens.profile
+package com.example.pokemontrade.ui.screens.profile.cards
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -35,8 +35,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pokemontrade.data.models.cards.CardResponse
 import com.example.pokemontrade.data.storage.TokenManager
-import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
-import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
 import kotlinx.coroutines.launch
 

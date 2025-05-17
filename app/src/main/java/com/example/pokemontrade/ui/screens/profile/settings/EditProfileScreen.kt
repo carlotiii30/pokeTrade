@@ -1,6 +1,5 @@
 package com.example.pokemontrade.ui.screens.profile.settings
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,7 +50,9 @@ import com.example.pokemontrade.data.models.users.UserProfileRequest
 import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.screens.profile.UsersViewModel
 import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
+import com.example.pokemontrade.ui.theme.DisabledRed
 import com.example.pokemontrade.ui.theme.RedPrimary
+import com.example.pokemontrade.ui.theme.SettingsRed
 import kotlinx.coroutines.launch
 
 @Composable
@@ -108,7 +110,7 @@ fun EditProfileScreen(
                 modifier = Modifier
                     .size(180.dp)
                     .clip(CircleShape)
-                    .background(RedPrimary),
+                    .background(SettingsRed),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -131,7 +133,7 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            ProfileTextField(label = "Email", value = email, onValueChange = {email = it})
+            ProfileTextField(label = "Email", value = email, onValueChange = { email = it })
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -151,7 +153,7 @@ fun EditProfileScreen(
 
             Divider(color = RedPrimary.copy(alpha = 0.5f))
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             Button(
                 onClick = {
@@ -169,7 +171,14 @@ fun EditProfileScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .padding(vertical = 52.dp, horizontal = 32.dp)
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SettingsRed,
+                    contentColor = Color.White,
+                )
             ) {
                 Text("Guardar cambios")
             }
