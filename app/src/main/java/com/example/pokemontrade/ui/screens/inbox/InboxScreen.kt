@@ -1,5 +1,7 @@
 package com.example.pokemontrade.ui.screens.inbox
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,33 +35,62 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pokemontrade.R
-import com.example.pokemontrade.ui.screens.profile.UsersViewModel
-import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
+import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.theme.GreenPrimary
 import com.example.pokemontrade.ui.theme.LightGray
 import com.example.pokemontrade.ui.theme.LightGreen
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+data class Conversation(
+    val name: String,
+    val status: String,
+    val time: String
+)
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InboxScreen(
-    conversations: List<Conversation> = sampleConversations,
     onConversationClick: (Conversation) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val tokenManager = remember { com.example.pokemontrade.data.storage.TokenManager(context) }
-    val usersViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+    val tokenManager = remember { TokenManager(context) }
+    val scope = rememberCoroutineScope()
 
+    val usersApi = remember { RetrofitInstance.getAuthenticatedApi(tokenManager) }
+
+    var currentUserId by remember { mutableStateOf<Int?>(null) }
     var userName by remember { mutableStateOf("Entrenador") }
+    var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        val profile = usersViewModel.getUserProfile()
-        profile?.let {
-            userName = it.name
+        scope.launch {
+            val user = tokenManager.getUserProfileFlow().firstOrNull()
+            user?.let {
+                currentUserId = it.id
+                userName = it.name
+
+                val trades = usersApi.getMyTrades()
+                val result = trades.map { trade ->
+                    val otherUserId =
+                        if (trade.requesterId == it.id) trade.receiverId else trade.requesterId
+                    val otherUser = usersApi.getUserById(otherUserId)
+
+                    Conversation(
+                        name = otherUser.name,
+                        status = trade.status.replaceFirstChar { ch -> ch.uppercase() },
+                        time = trade.createdAt.toFormattedHour()
+                    )
+                }
+                conversations = result
+            }
         }
     }
 
@@ -133,7 +165,7 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "En trámite",
+                text = convo.status,
                 color = GreenPrimary,
                 fontSize = 14.sp
             )
@@ -146,9 +178,13 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
     }
 }
 
-data class Conversation(val name: String, val time: String)
-
-val sampleConversations = listOf(
-    Conversation("Antonio R.", "09:10 am"),
-    Conversation("Paula G.", "20:23 am")
-)
+@RequiresApi(Build.VERSION_CODES.O)
+fun String.toFormattedHour(): String {
+    return try {
+        val parsed = OffsetDateTime.parse(this)
+        val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+        parsed.format(formatter)
+    } catch (e: Exception) {
+        this
+    }
+}

@@ -73,8 +73,8 @@ fun UserReviewsScreen(userId: Int, navController: NavController, tokenManager: T
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
-        viewModel.loadUserReviews(userId)
         scope.launch {
+            viewModel.loadUserReviews(userId)
             profile = usersViewModel.getUserById(userId)
         }
     }

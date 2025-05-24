@@ -72,9 +72,11 @@ fun ReviewsScreen(navController: NavController, tokenManager: TokenManager) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        viewModel.loadMyReviews()
         scope.launch {
-            profile = usersViewModel.getUserProfile()
+            val userProfile = usersViewModel.getUserProfile()
+            profile = userProfile
+            if (userProfile == null) return@launch
+            viewModel.loadMyReviews(userProfile)
         }
     }
 
