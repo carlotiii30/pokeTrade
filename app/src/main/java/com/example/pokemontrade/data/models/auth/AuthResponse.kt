@@ -9,7 +9,8 @@ data class AuthUser(
     val username: String,
     val location: String,
     val rating: Float?,
-    val reviews_count: Int
+    val reviews_count: Int,
+    @SerializedName("profilePictureUrl") val profilePictureUrl: String?
 )
 
 data class AuthResponse(

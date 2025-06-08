@@ -41,17 +41,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.pokemontrade.data.models.users.UserProfile
 import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModel
 import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModelFactory
 import com.example.pokemontrade.ui.theme.BluePrimary
 import com.example.pokemontrade.ui.theme.DisabledBlue
+import com.example.pokemontrade.utils.resolveImageUrl
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.format.TextStyle
@@ -191,6 +194,7 @@ fun UserReviewsScreen(userId: Int, navController: NavController, tokenManager: T
 fun ReviewItem(reviewWithAuthor: ReviewWithAuthor) {
     val review = reviewWithAuthor.review
     val authorName = reviewWithAuthor.authorName
+    val resolvedUrl = resolveImageUrl(reviewWithAuthor.authorPicture)
 
     Column(modifier = Modifier.padding(vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -199,7 +203,14 @@ fun ReviewItem(reviewWithAuthor: ReviewWithAuthor) {
                     .size(50.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFF1F1F1))
-            )
+            ){
+                AsyncImage(
+                    model = resolvedUrl,
+                    contentDescription = "Imagen de perfil",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(authorName, fontWeight = FontWeight.Bold, fontSize = 18.sp)

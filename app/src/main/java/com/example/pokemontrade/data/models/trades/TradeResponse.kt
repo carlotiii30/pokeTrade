@@ -8,6 +8,12 @@ data class TradeResponse(
     @SerializedName("requestedCardId") val requestedCardId: Int,
     @SerializedName("requesterId") val requesterId: Int,
     @SerializedName("receiverId") val receiverId: Int,
-    val status: String,
+    val statusRequester: String,
+    val statusReceiver: String,
     @SerializedName("createdAt") val createdAt: String
+)
+
+data class TradeCreate(
+    @SerializedName("offered_card_id") val offeredCardId: Int,
+    @SerializedName("requested_card_id") val requestedCardId: Int
 )

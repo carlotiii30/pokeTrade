@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,31 +27,36 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.pokemontrade.R
 import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.profile.UsersViewModel
+import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.GreenPrimary
 import com.example.pokemontrade.ui.theme.LightGray
 import com.example.pokemontrade.ui.theme.LightGreen
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
+import com.example.pokemontrade.utils.resolveImageUrl
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 data class Conversation(
+    val tradeId: Int,
     val name: String,
+    val picture: String?,
     val status: String,
     val time: String
 )
@@ -62,37 +68,64 @@ fun InboxScreen(
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
-    val scope = rememberCoroutineScope()
 
     val usersApi = remember { RetrofitInstance.getAuthenticatedApi(tokenManager) }
+    var profile by remember {
+        mutableStateOf<com.example.pokemontrade.data.models.users.UserProfile?>(
+            null
+        )
+    }
 
-    var currentUserId by remember { mutableStateOf<Int?>(null) }
-    var userName by remember { mutableStateOf("Entrenador") }
+    val userViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
     var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            val user = tokenManager.getUserProfileFlow().firstOrNull()
-            user?.let {
-                currentUserId = it.id
-                userName = it.name
+    var isLoading by remember { mutableStateOf(true) }
 
+    LaunchedEffect(Unit) {
+        try {
+            profile = userViewModel.getUserProfile()
+
+            profile?.let {
                 val trades = usersApi.getMyTrades()
+
                 val result = trades.map { trade ->
                     val otherUserId =
                         if (trade.requesterId == it.id) trade.receiverId else trade.requesterId
                     val otherUser = usersApi.getUserById(otherUserId)
 
+                    val userStatus = if (trade.requesterId == it.id) trade.statusRequester else trade.statusReceiver
+                    val statusText = when (userStatus.lowercase()) {
+                        "completed" -> "Finalizado"
+                        "accepted" -> "Aceptado"
+                        "declined" -> "Rechazado"
+                        else -> "Pendiente"
+                    }
+
                     Conversation(
+                        tradeId = trade.id,
                         name = otherUser.name,
-                        status = trade.status.replaceFirstChar { ch -> ch.uppercase() },
+                        picture = otherUser.profilePictureUrl,
+                        status = statusText,
                         time = trade.createdAt.toFormattedHour()
                     )
                 }
                 conversations = result
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
         }
     }
+
+    if (isLoading || profile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val userName = profile?.name ?: "Entrenador"
 
     Column(Modifier.fillMaxSize()) {
         Box(
@@ -109,7 +142,7 @@ fun InboxScreen(
             ) {
                 Column {
                     Text(
-                        text = "Hola",
+                        text = "Hola,",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = LightGreen
@@ -136,7 +169,9 @@ fun InboxScreen(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(conversations) { convo ->
-                ConversationItem(convo, onClick = { onConversationClick(convo) })
+                ConversationItem(convo = convo) {
+                    onConversationClick(convo)
+                }
             }
         }
     }
@@ -144,6 +179,8 @@ fun InboxScreen(
 
 @Composable
 fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
+    val resolvedUrl = resolveImageUrl(convo.picture)
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -154,8 +191,16 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(LightGray, shape = CircleShape)
-        )
+                .clip(CircleShape)
+                .background(LightGray)
+        ) {
+            AsyncImage(
+                model = resolvedUrl,
+                contentDescription = "Imagen de perfil",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

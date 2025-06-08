@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -54,6 +55,7 @@ import com.example.pokemontrade.data.storage.TokenManager
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.RedPrimary
+import com.example.pokemontrade.utils.resolveImageUrl
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
@@ -71,11 +73,18 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
 
     var profile by remember { mutableStateOf<UserProfile?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        cardsViewModel.loadMyCards()
-        scope.launch {
-            profile = usersViewModel.getUserProfile()
+        try {
+            cardsViewModel.loadMyCards()
+            scope.launch {
+                profile = usersViewModel.getUserProfile()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
         }
     }
 
@@ -93,9 +102,18 @@ fun ProfileScreen(
         }
     }
 
+    if (isLoading || profile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     val userName = profile?.name ?: "Entrenador"
     val averageRating = profile?.rating ?: 0f
     val ratingCount = profile?.reviewsCount ?: 0
+    val resolvedUrl = resolveImageUrl(profile?.profilePictureUrl)
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -126,8 +144,16 @@ fun ProfileScreen(
                     modifier = Modifier
                         .size(130.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF0F0F0))
-                )
+                        .background(Color(0xFFF0F0F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = resolvedUrl,
+                        contentDescription = "Imagen de perfil",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -235,7 +261,7 @@ fun ProfileScreen(
                                     }
                             ) {
                                 AsyncImage(
-                                    model = card.img,
+                                    model = card.imageUrl,
                                     contentDescription = "Carta",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop

@@ -1,7 +1,11 @@
 package com.example.pokemontrade.ui.screens.profile.cards
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -38,19 +42,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.pokemontrade.data.api.RetrofitInstance
 import com.example.pokemontrade.data.models.cards.CardCreate
 import com.example.pokemontrade.data.models.cards.CardType
 import com.example.pokemontrade.data.models.cards.toBackendValue
 import com.example.pokemontrade.data.storage.TokenManager
-import com.example.pokemontrade.ui.theme.DisabledBlue
 import com.example.pokemontrade.ui.theme.DisabledRed
 import com.example.pokemontrade.ui.theme.RedPrimary
+import com.example.pokemontrade.utils.prepareFilePart
+import com.example.pokemontrade.utils.resolveImageUrl
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,11 +72,35 @@ fun AddCardScreen(
     val scope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(CardType.NORMAL) }
     val isFormValid = name.isNotBlank()
 
     val expanded = remember { mutableStateOf(false) }
     val cardTypes = CardType.entries
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            scope.launch {
+                val part = prepareFilePart(context, it)
+                if (part != null) {
+                    try {
+                        val api = RetrofitInstance.getAuthenticatedApi(TokenManager(context))
+                        val response = api.uploadImage(part)
+                        imageUrl = resolveImageUrl(response.url)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -106,15 +138,25 @@ fun AddCardScreen(
                 .fillMaxWidth()
                 .height(380.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFD9D9D9)),
+                .background(Color(0xFFD9D9D9))
+                .clickable { imagePickerLauncher.launch("image/*") },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.PhotoCamera,
-                contentDescription = "Cámara",
-                tint = Color.White,
-                modifier = Modifier.size(56.dp)
-            )
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Imagen de carta",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.PhotoCamera,
+                    contentDescription = "Cámara",
+                    tint = Color.White,
+                    modifier = Modifier.size(56.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -130,6 +172,22 @@ fun AddCardScreen(
                 onValueChange = { name = it },
                 label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.LightGray,
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedContainerColor = Color(0xFFF9FBFA),
+                    unfocusedContainerColor = Color(0xFFF9FBFA),
+                    focusedLabelColor = Color.Gray,
+                    unfocusedLabelColor = Color.Gray
+                )
+            )
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Descripción") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.LightGray,
@@ -192,7 +250,7 @@ fun AddCardScreen(
                 onClick = {
                     scope.launch {
                         viewModel.createCard(
-                            card = CardCreate(name, type.toBackendValue()),
+                            card = CardCreate(name, description, type.toBackendValue(), imageUrl = imageUrl),
                             onSuccess = {
                                 Toast.makeText(context, "Carta creada", Toast.LENGTH_SHORT).show()
                                 navController.previousBackStackEntry

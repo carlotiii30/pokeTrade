@@ -85,7 +85,7 @@ fun CardDetailProfileScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         AsyncImage(
-            model = card.img,
+            model = card.imageUrl,
             contentDescription = "Carta Pokémon",
             modifier = Modifier
                 .fillMaxWidth()

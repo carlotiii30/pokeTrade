@@ -29,10 +29,13 @@ import com.example.pokemontrade.ui.screens.auth.LoginScreen
 import com.example.pokemontrade.ui.screens.auth.RegisterScreen
 import com.example.pokemontrade.ui.screens.home.HomeScreen
 import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeScreen
+import com.example.pokemontrade.ui.screens.home.trades.OfferTradeScreen
+import com.example.pokemontrade.ui.screens.home.trades.SelectCardForTradeScreen
 import com.example.pokemontrade.ui.screens.home.users.UserProfileScreen
 import com.example.pokemontrade.ui.screens.home.users.reviews.UserReviewsScreen
 import com.example.pokemontrade.ui.screens.inbox.InboxScreen
-import com.example.pokemontrade.ui.screens.inbox.TradeDetailScreen
+import com.example.pokemontrade.ui.screens.inbox.TradeDetail.TradeDetailScreen
+import com.example.pokemontrade.ui.screens.inbox.reviews.LeaveReviewScreen
 import com.example.pokemontrade.ui.screens.location.LocationScreen
 import com.example.pokemontrade.ui.screens.location.SelectLocationMapScreenWrapper
 import com.example.pokemontrade.ui.screens.profile.ProfileScreen
@@ -69,7 +72,8 @@ fun AppNavigation(context: Context) {
     val currentBackStack by navController.currentBackStackEntryAsState()
 
     val currentRoute = currentBackStack?.destination?.route
-    val prefixes = listOf("user_profile/", "card/", "detail/", "user_reviews/")
+    val prefixes =
+        listOf("user_profile/", "card/", "detail/", "user_reviews/", "offer_trade", "leave_review")
     val showBottomBar = prefixes.any { prefix -> currentRoute?.startsWith(prefix) == true } ||
             currentRoute in listOf("home", "inbox", "profile", "reviews")
 
@@ -168,33 +172,43 @@ fun AppNavigation(context: Context) {
                 )
             }
 
+            composable("offer_trade/{cardId}") { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getString("cardId")?.toIntOrNull()
+                    ?: return@composable
+                OfferTradeScreen(cardId = cardId, navController = navController)
+            }
+
+            composable("select_card_for_trade") {
+                SelectCardForTradeScreen(navController = navController)
+            }
 
             composable("inbox") {
                 InboxScreen(
                     onConversationClick = { convo ->
-                        navController.navigate("detail/${convo.name}/${convo.time}")
+                        navController.navigate("detail/${convo.tradeId}")
                     }
                 )
             }
 
-            composable(
-                "detail/{name}/{time}",
-                arguments = listOf(
-                    navArgument("name") { type = NavType.StringType },
-                    navArgument("time") { type = NavType.StringType }
-                )
-            ) { backStackEntry ->
-                val name = backStackEntry.arguments?.getString("name") ?: ""
-                val time = backStackEntry.arguments?.getString("time") ?: ""
+            composable("detail/{tradeId}") { backStackEntry ->
+                val tradeId = backStackEntry.arguments?.getString("tradeId")?.toIntOrNull()
+                    ?: return@composable
                 TradeDetailScreen(
-                    proposer = name,
-                    time = time,
-                    offeredCard = R.drawable.cards_header,
-                    requestedCard = R.drawable.cards_header,
-                    onAccept = { navController.popBackStack() },
-                    onReject = { navController.popBackStack() }
+                    tradeId = tradeId,
+                    navController = navController,
+                    onFinish = { navController.popBackStack() })
+            }
+
+            composable("leave_review/{tradeId}") { backStackEntry ->
+                val tradeId = backStackEntry.arguments?.getString("tradeId")?.toIntOrNull()
+                    ?: return@composable
+                LeaveReviewScreen(
+                    tradeId = tradeId,
+                    navController = navController
                 )
             }
+
+
 
             composable("profile") {
                 ProfileScreen(navController = navController)

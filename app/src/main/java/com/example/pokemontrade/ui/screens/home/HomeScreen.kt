@@ -2,13 +2,16 @@ package com.example.pokemontrade.ui.screens.home
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -18,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -32,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -49,6 +54,7 @@ import com.example.pokemontrade.data.models.cards.toBackendValue
 import com.example.pokemontrade.ui.screens.profile.UsersViewModel
 import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.BluePrimary
+import com.example.pokemontrade.ui.theme.LightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,16 +64,43 @@ fun HomeScreen(
 ) {
     val tokenManager = remember { com.example.pokemontrade.data.storage.TokenManager(context) }
     val userViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
-    val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(RetrofitInstance.unauthenticatedApi))
+    val homeViewModel: HomeViewModel =
+        viewModel(factory = HomeViewModelFactory(RetrofitInstance.getAuthenticatedApi(tokenManager)))
 
     val cards by homeViewModel.cards.collectAsState()
+    var isLoading by remember { mutableStateOf(true) }
+
+    val recommendedCards by homeViewModel.recommendedCards.collectAsState()
+    val mostPopularCards by homeViewModel.mostPopularCards.collectAsState()
+
+    val recommendedLoaded by homeViewModel.recommendedLoaded.collectAsState()
+    val popularLoaded by homeViewModel.popularLoaded.collectAsState()
 
     var searchText by remember { mutableStateOf("") }
-    var profile by remember { mutableStateOf<com.example.pokemontrade.data.models.users.UserProfile?>(null) }
+    var profile by remember {
+        mutableStateOf<com.example.pokemontrade.data.models.users.UserProfile?>(
+            null
+        )
+    }
 
     LaunchedEffect(Unit) {
-        homeViewModel.loadAllCards()
-        profile = userViewModel.getUserProfile()
+        try {
+            homeViewModel.loadAllCards()
+            homeViewModel.loadRecommendedCards()
+            homeViewModel.loadMostPopularCards()
+            profile = userViewModel.getUserProfile()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
+    }
+
+    if (isLoading || profile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
     }
 
     val userName = profile?.name ?: "Entrenador"
@@ -88,7 +121,13 @@ fun HomeScreen(
         TextField(
             value = searchText,
             onValueChange = { searchText = it },
-            placeholder = { Text("Buscar", fontWeight = FontWeight.Black) },
+            placeholder = {
+                Text(
+                    text = "Buscar",
+                    fontWeight = FontWeight.Black,
+                    color = LightGray
+                )
+            },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.buscar),
@@ -135,7 +174,8 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             TextField(
-                value = selectedType?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos",
+                value = selectedType?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
+                    ?: "Todos",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Tipos") },
@@ -160,7 +200,8 @@ fun HomeScreen(
                 onDismissRequest = { expanded = false }
             ) {
                 allTypes.forEach { type ->
-                    val typeName = type?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos"
+                    val typeName =
+                        type?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Todos"
                     DropdownMenuItem(
                         text = { Text(typeName) },
                         onClick = {
@@ -182,27 +223,127 @@ fun HomeScreen(
             matchesType && matchesSearch
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            items(filteredCards) { card ->
-                Card(
-                    onClick = { onCardClick(card) },
-                    modifier = Modifier
-                        .height(140.dp)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    AsyncImage(
-                        model = card.img,
-                        contentDescription = "Carta de ${card.name}",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+            if (recommendedLoaded && recommendedCards.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Para ti",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
+                }
+
+                item {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                    ) {
+                        items(recommendedCards) { card ->
+                            Card(
+                                onClick = { onCardClick(card) },
+                                modifier = Modifier
+                                    .height(140.dp)
+                                    .fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                AsyncImage(
+                                    model = card.imageUrl,
+                                    contentDescription = "Carta recomendada de ${card.name}",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (popularLoaded && mostPopularCards.isNotEmpty() && selectedType == null) {
+                item {
+                    Text(
+                        text = "Lo más visto",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+                item {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 500.dp)
+                    ) {
+                        items(mostPopularCards) { card ->
+                            Card(
+                                onClick = { onCardClick(card) },
+                                modifier = Modifier
+                                    .height(140.dp)
+                                    .fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                AsyncImage(
+                                    model = card.imageUrl,
+                                    contentDescription = "Carta de ${card.name}",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (selectedType == null) {
+                item {
+                    Text(
+                        text = "Todas las cartas",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+            }
+            item {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                ) {
+                    items(filteredCards) { card ->
+                        Card(
+                            onClick = { onCardClick(card) },
+                            modifier = Modifier
+                                .height(140.dp)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            AsyncImage(
+                                model = card.imageUrl,
+                                contentDescription = "Carta de ${card.name}",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
             }
         }

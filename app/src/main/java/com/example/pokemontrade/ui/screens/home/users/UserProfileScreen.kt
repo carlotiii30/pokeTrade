@@ -52,6 +52,7 @@ import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModelFac
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
 import com.example.pokemontrade.ui.theme.BluePrimary
+import com.example.pokemontrade.utils.resolveImageUrl
 import com.google.gson.Gson
 
 @Composable
@@ -77,6 +78,7 @@ fun UserProfileScreen(
     val userName = profile?.name ?: "Entrenador"
     val averageRating = profile?.rating ?: 0f
     val ratingCount = profile?.reviewsCount ?: 0
+    val resolvedUrl = resolveImageUrl(profile?.profilePictureUrl)
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -107,8 +109,16 @@ fun UserProfileScreen(
                     modifier = Modifier
                         .size(130.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF0F0F0))
-                )
+                        .background(Color(0xFFF0F0F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = resolvedUrl,
+                        contentDescription = "Imagen de perfil",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -178,7 +188,7 @@ fun UserProfileScreen(
                         }
                 ) {
                     AsyncImage(
-                        model = card.img,
+                        model = card.imageUrl,
                         contentDescription = "Carta",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

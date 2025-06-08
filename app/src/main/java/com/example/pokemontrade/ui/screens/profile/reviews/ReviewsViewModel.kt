@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 
 data class ReviewWithAuthor(
     val review: ReviewResponse,
-    val authorName: String
+    val authorName: String,
+    val authorPicture: String?
 )
 
 class ReviewsViewModel(
@@ -34,7 +35,7 @@ class ReviewsViewModel(
 
                 val reviewsWithAuthors = rawReviews.map { review ->
                     val author = api.getUserById(review.authorId)
-                    ReviewWithAuthor(review, author.name)
+                    ReviewWithAuthor(review, author.name, author.profilePictureUrl)
                 }
 
                 _reviews.value = reviewsWithAuthors

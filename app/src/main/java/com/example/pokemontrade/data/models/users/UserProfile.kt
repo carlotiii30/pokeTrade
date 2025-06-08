@@ -9,5 +9,6 @@ data class UserProfile(
     val username: String,
     val location: String,
     val rating: Float? = null,
-    @SerializedName("reviews_count") val reviewsCount: Int = 0
+    @SerializedName("reviews_count") val reviewsCount: Int = 0,
+    @SerializedName("profilePictureUrl") val profilePictureUrl: String?
 )

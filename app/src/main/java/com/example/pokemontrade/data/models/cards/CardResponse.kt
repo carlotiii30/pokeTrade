@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName
 data class CardResponse(
     val id: Int,
     val name: String,
+    val description: String?,
     val type: String,
-    val img: String,
+    @SerializedName("imageUrl") val imageUrl: String?,
     @SerializedName("userId") val userId: Int
 )
