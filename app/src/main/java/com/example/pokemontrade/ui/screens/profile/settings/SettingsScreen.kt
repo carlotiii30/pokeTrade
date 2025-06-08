@@ -1,4 +1,4 @@
-package com.example.pokemontrade.ui.screens.profile
+package com.example.pokemontrade.ui.screens.profile.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -21,22 +21,32 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.theme.PokemonTradeTheme
 import com.example.pokemontrade.ui.theme.RedPrimary
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun SettingsScreen(navController: NavController) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+    val scope = rememberCoroutineScope()
+
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // Top bar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -62,8 +72,11 @@ fun SettingsScreen(navController: NavController) {
             Divider(color = RedPrimary.copy(alpha = 0.5f))
 
             SettingsItem("Cerrar sesión") {
-                navController.navigate("auth") {
-                    popUpTo("home") { inclusive = true }
+                scope.launch {
+                    tokenManager.clearToken()
+                    navController.navigate("auth") {
+                        popUpTo("home") { inclusive = true }
+                    }
                 }
             }
         }
@@ -114,7 +127,7 @@ fun SettingsItem(text: String, onClick: () -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewSettingsScreen() {
-    com.example.pokemontrade.ui.theme.PokemonTradeTheme {
+    PokemonTradeTheme {
         SettingsScreen(navController = rememberNavController())
     }
 }

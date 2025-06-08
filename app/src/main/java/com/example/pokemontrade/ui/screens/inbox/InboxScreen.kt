@@ -1,5 +1,7 @@
 package com.example.pokemontrade.ui.screens.inbox
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,30 +19,114 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.pokemontrade.R
+import com.example.pokemontrade.data.api.RetrofitInstance
+import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.profile.UsersViewModel
+import com.example.pokemontrade.ui.screens.profile.UsersViewModelFactory
 import com.example.pokemontrade.ui.theme.GreenPrimary
 import com.example.pokemontrade.ui.theme.LightGray
 import com.example.pokemontrade.ui.theme.LightGreen
+import com.example.pokemontrade.utils.resolveImageUrl
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+data class Conversation(
+    val tradeId: Int,
+    val name: String,
+    val picture: String?,
+    val status: String,
+    val time: String
+)
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InboxScreen(
-    userName: String = "Carlota",
-    conversations: List<Conversation> = sampleConversations,
     onConversationClick: (Conversation) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+
+    val usersApi = remember { RetrofitInstance.getAuthenticatedApi(tokenManager) }
+    var profile by remember {
+        mutableStateOf<com.example.pokemontrade.data.models.users.UserProfile?>(
+            null
+        )
+    }
+
+    val userViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+    var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
+
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        try {
+            profile = userViewModel.getUserProfile()
+
+            profile?.let {
+                val trades = usersApi.getMyTrades()
+
+                val result = trades.map { trade ->
+                    val otherUserId =
+                        if (trade.requesterId == it.id) trade.receiverId else trade.requesterId
+                    val otherUser = usersApi.getUserById(otherUserId)
+
+                    val userStatus = if (trade.requesterId == it.id) trade.statusRequester else trade.statusReceiver
+                    val statusText = when (userStatus.lowercase()) {
+                        "completed" -> "Finalizado"
+                        "accepted" -> "Aceptado"
+                        "declined" -> "Rechazado"
+                        else -> "Pendiente"
+                    }
+
+                    Conversation(
+                        tradeId = trade.id,
+                        name = otherUser.name,
+                        picture = otherUser.profilePictureUrl,
+                        status = statusText,
+                        time = trade.createdAt.toFormattedHour()
+                    )
+                }
+                conversations = result
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
+    }
+
+    if (isLoading || profile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val userName = profile?.name ?: "Entrenador"
+
     Column(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -56,7 +142,7 @@ fun InboxScreen(
             ) {
                 Column {
                     Text(
-                        text = "Hola",
+                        text = "Hola,",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = LightGreen
@@ -71,21 +157,21 @@ fun InboxScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.buscar),
                     contentDescription = "Buscar",
-                    modifier = Modifier.run {
-                        size(36.dp)
-                            .background(Color.White, shape = CircleShape)
-                            .padding(8.dp)
-                    }
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color.White, shape = CircleShape)
+                        .padding(8.dp)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Lista de conversaciones
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(conversations) { convo ->
-                ConversationItem(convo, onClick = { onConversationClick(convo) })
+                ConversationItem(convo = convo) {
+                    onConversationClick(convo)
+                }
             }
         }
     }
@@ -93,6 +179,8 @@ fun InboxScreen(
 
 @Composable
 fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
+    val resolvedUrl = resolveImageUrl(convo.picture)
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -103,8 +191,16 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(LightGray, shape = CircleShape)
-        )
+                .clip(CircleShape)
+                .background(LightGray)
+        ) {
+            AsyncImage(
+                model = resolvedUrl,
+                contentDescription = "Imagen de perfil",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -114,7 +210,7 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "En trámite",
+                text = convo.status,
                 color = GreenPrimary,
                 fontSize = 14.sp
             )
@@ -127,18 +223,13 @@ fun ConversationItem(convo: Conversation, onClick: () -> Unit) {
     }
 }
 
-data class Conversation(val name: String, val time: String)
-
-val sampleConversations = listOf(
-    Conversation("Antonio R.", "09:10 am"),
-    Conversation("Paula G.", "20:23 am")
-)
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewInboxScreen() {
-    InboxScreen(
-        userName = "Carlota",
-        conversations = sampleConversations
-    )
+@RequiresApi(Build.VERSION_CODES.O)
+fun String.toFormattedHour(): String {
+    return try {
+        val parsed = OffsetDateTime.parse(this)
+        val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+        parsed.format(formatter)
+    } catch (e: Exception) {
+        this
+    }
 }

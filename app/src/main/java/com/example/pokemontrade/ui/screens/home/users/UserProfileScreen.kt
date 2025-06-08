@@ -1,4 +1,4 @@
-package com.example.pokemontrade.ui.screens.profile
+package com.example.pokemontrade.ui.screens.home.users
 
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -21,13 +21,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.StarHalf
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +31,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,61 +47,32 @@ import coil.compose.AsyncImage
 import com.example.pokemontrade.R
 import com.example.pokemontrade.data.models.users.UserProfile
 import com.example.pokemontrade.data.storage.TokenManager
+import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModel
+import com.example.pokemontrade.ui.screens.home.cards.CardDetailHomeViewModelFactory
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModel
 import com.example.pokemontrade.ui.screens.profile.cards.CardsViewModelFactory
-import com.example.pokemontrade.ui.theme.RedPrimary
+import com.example.pokemontrade.ui.theme.BluePrimary
 import com.example.pokemontrade.utils.resolveImageUrl
 import com.google.gson.Gson
-import kotlinx.coroutines.launch
 
 @Composable
-fun ProfileScreen(
-    navController: NavController
+fun UserProfileScreen(
+    navController: NavController,
+    userId: String
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
 
     val cardsViewModel: CardsViewModel = viewModel(factory = CardsViewModelFactory(tokenManager))
-    val usersViewModel: UsersViewModel = viewModel(factory = UsersViewModelFactory(tokenManager))
+    val usersViewModel: CardDetailHomeViewModel =
+        viewModel(factory = CardDetailHomeViewModelFactory(tokenManager))
 
     val cards by cardsViewModel.cards.collectAsState()
-    val scope = rememberCoroutineScope()
-
     var profile by remember { mutableStateOf<UserProfile?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        try {
-            cardsViewModel.loadMyCards()
-            scope.launch {
-                profile = usersViewModel.getUserProfile()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            isLoading = false
-        }
-    }
-
-    LaunchedEffect(navController.currentBackStackEntry) {
-        if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_created") == true) {
-            cardsViewModel.loadMyCards()
-            navController.currentBackStackEntry?.savedStateHandle?.set("card_created", false)
-        }
-    }
-
-    LaunchedEffect(navController.currentBackStackEntry) {
-        if (navController.currentBackStackEntry?.savedStateHandle?.get<Boolean>("card_deleted") == true) {
-            cardsViewModel.loadMyCards()
-            navController.currentBackStackEntry?.savedStateHandle?.set("card_deleted", false)
-        }
-    }
-
-    if (isLoading || profile == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
+    LaunchedEffect(userId) {
+        profile = usersViewModel.getUserById(userId.toInt())
+        cardsViewModel.loadUserCards(userId)
     }
 
     val userName = profile?.name ?: "Entrenador"
@@ -114,14 +80,13 @@ fun ProfileScreen(
     val ratingCount = profile?.reviewsCount ?: 0
     val resolvedUrl = resolveImageUrl(profile?.profilePictureUrl)
 
-
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(360.dp)
                 .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
-                .background(RedPrimary)
+                .background(BluePrimary)
                 .padding(bottom = 40.dp)
         ) {
             Image(
@@ -169,10 +134,9 @@ fun ProfileScreen(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable {
-                            navController.navigate("reviews")
-                        }
+                    modifier = Modifier.clickable {
+                        navController.navigate("user_reviews/$userId")
+                    }
                 ) {
                     repeat(5) { i ->
                         val icon = when {
@@ -195,15 +159,6 @@ fun ProfileScreen(
                     )
                 }
             }
-
-            IconButton(
-                onClick = { navController.navigate("settings") },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = Color.White)
-            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -215,60 +170,29 @@ fun ProfileScreen(
             modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
         )
 
-        val galleryItems = cards.map { it.id } + -1
-
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),
             modifier = Modifier.padding(horizontal = 12.dp)
         ) {
-            items(galleryItems) { cardId ->
+            items(cards) { card ->
                 Box(
                     modifier = Modifier
                         .padding(6.dp)
                         .height(120.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.LightGray),
-                    contentAlignment = Alignment.Center
+                        .background(Color.LightGray)
+                        .clickable {
+                            val cardJson = Uri.encode(Gson().toJson(card))
+                            navController.navigate("card/$cardJson")
+                        }
                 ) {
-                    if (cardId == -1) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable {
-                                    navController.navigate("add_card") {
-                                        launchSingleTop = true
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Añadir carta",
-                                tint = Color.DarkGray,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    } else {
-                        val card = cards.firstOrNull { it.id == cardId }
-                        if (card != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clickable {
-                                        val cardJson = Uri.encode(Gson().toJson(card))
-                                        navController.navigate("profile_card/$cardJson")
-                                    }
-                            ) {
-                                AsyncImage(
-                                    model = card.imageUrl,
-                                    contentDescription = "Carta",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
-                    }
+                    AsyncImage(
+                        model = card.imageUrl,
+                        contentDescription = "Carta",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
         }
